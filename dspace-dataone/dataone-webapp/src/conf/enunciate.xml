@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<enunciate label="mn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://enunciate.codehaus.org/schemas/enunciate-1.28.xsd">
+
+    <webapp mergeWebXML="web.xml" />
+
+    <services>
+        <rest defaultRestSubcontext="/"/>
+    </services>
+
+    <modules>
+        <spring-app disabled="false" />
+        <docs docsDir="/" splashPackage="org.dataone.rest.api" title="DataONE Member Node API" copyright="DataONE"/>
+    </modules>
+
+</enunciate>

@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+
+<!--
+  - bitstream-formats.xml
+  -
+  - Version:  $Revision$
+  -
+  - Date:     $Date$
+  -
+  - Initial contents for bitstream format registry.  Once the registry has
+  - been loaded, this file becomes obsolete; the current version of the
+  - registry must be read from the database.  Use
+  - org.dspace.content.BitstreamFormat.
+  -
+  - valid support_levels:  0 = unknown,  1 = known,  2 = supported
+  - internal:  specify true for internal types of bitstream (i.e. used
+  -            by the system, not for distribution to users)
+  - extensions:  Typical filename extensions, used for identifying incoming
+  -              files.  Can have multiple extensions, as shown in the example
+  -              below.  "internal" formats shouldn't have these.
+  -
+  - <dspace-bitstream-types>
+  -   <bitstream-type>
+  -     <mimetype>mime/type</mimetype>
+  -     <short_description>Thing v1</short_description>
+  -     <description>Thing Version 1 Document Format</description>
+  -     <support_level>1</support_level>
+  -     <internal>false</internal>
+  -     <extension>thingdoc</extension>
+  -     <extension>thd</extension>
+  -   </bitstream-type>
+  -
+  -    ...
+  - </dspace-bitstream-types>
+  -->
+
+
+
+<dspace-bitstream-types>
+
+    <bitstream-type>
+        <mimetype>text/xml</mimetype>
+        <short_description>http://www.loc.gov/METS/</short_description>
+        <description>Metadata Encoding Transmission Standard</description>
+        <support_level>1</support_level>
+        <internal>false</internal>
+        <extension>xml</extension>
+    </bitstream-type>
+
+    <bitstream-type>
+        <mimetype>application/rdf+xml; charset=utf-8</mimetype>
+        <short_description>http://www.openarchives.org/ore/terms/</short_description>
+        <description>Object Reuse and Exchange</description>
+        <support_level>1</support_level>
+        <internal>false</internal>
+        <extension>rdf</extension>
+    </bitstream-type>
+
+</dspace-bitstream-types>

@@ -22,6 +22,7 @@
          as a dependency in most other modules in [src]/dspace/modules -->
     <modules>
         <module>additions</module>
+        <module>dataone</module>
     </modules>
 
     <!-- 
@@ -106,6 +107,15 @@
             </activation>
             <modules>
                 <module>oai</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>dspace-dataone</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <modules>
+                <module>dataone</module>
             </modules>
         </profile>
     </profiles>

@@ -418,10 +418,23 @@
            </modules>
        </profile>
 
+       <!-- REST Jersey -->
+       <profile>
+           <id>dspace-dataone</id>
+           <activation>
+               <file>
+                   <exists>dspace-dataone/pom.xml</exists>
+               </file>
+           </activation>
+           <modules>
+               <module>dspace-dataone</module>
+           </modules>
+       </profile>
 
-        <!--
-           Builds SWORD WAR for DSpace
-        -->
+
+       <!--
+          Builds SWORD WAR for DSpace
+       -->
         <profile>
             <id>dspace-sword</id>
             <activation>

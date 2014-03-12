@@ -97,6 +97,11 @@
          </exclusions>
       </dependency>
 
+       <dependency>
+           <groupId>org.dspace</groupId>
+           <artifactId>dataone-api</artifactId>
+           <version>${version}</version>
+       </dependency>
    </dependencies>
 
 </project>
