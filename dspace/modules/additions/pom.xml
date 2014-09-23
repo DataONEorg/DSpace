@@ -100,7 +100,7 @@
        <dependency>
            <groupId>org.dspace</groupId>
            <artifactId>dataone-api</artifactId>
-           <version>${version}</version>
+           <version>${dataone.version}</version>
        </dependency>
    </dependencies>
 

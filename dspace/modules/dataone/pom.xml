@@ -11,7 +11,7 @@
     <parent>
         <groupId>org.dspace</groupId>
         <artifactId>modules</artifactId>
-        <version>4.1</version>
+        <version>4.2</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -92,16 +92,16 @@
         <dependency>
             <groupId>org.dspace</groupId>
             <artifactId>dataone-webapp</artifactId>
+            <version>${dataone.version}</version>
             <type>war</type>
-            <version>${version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.dspace</groupId>
             <artifactId>dataone-webapp</artifactId>
+            <version>${dataone.version}</version>
             <type>jar</type>
             <classifier>classes</classifier>
-            <version>${version}</version>
         </dependency>
 
         <dependency>

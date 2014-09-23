@@ -3,14 +3,13 @@
     <groupId>org.dspace</groupId>
     <artifactId>dataone-webapp</artifactId>
     <packaging>war</packaging>
-    <version>4.1</version>
     <name>DSpace Data One Member Node : REST Webapplication</name>
     <url>http://demo.dspace.org</url>
 
     <parent>
         <groupId>org.dspace</groupId>
         <artifactId>dspace-dataone</artifactId>
-        <version>4.1</version>
+        <version>4.2.0</version>
         <relativePath>..</relativePath>
     </parent>
 

@@ -12,7 +12,6 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections.Transformer;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
@@ -26,6 +25,8 @@ import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -34,13 +35,29 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.extraction.ExtractingParams;
 import org.dspace.content.*;
 import org.dspace.content.Collection;
 import org.dspace.content.authority.ChoiceAuthorityManager;
 import org.dspace.content.authority.Choices;
 import org.dspace.content.authority.MetadataAuthorityManager;
-import org.dspace.core.*;
-import org.dspace.discovery.configuration.*;
+import org.dspace.core.ConfigurationManager;
+import org.dspace.core.Constants;
+import org.dspace.core.Context;
+import org.dspace.core.Email;
+import org.dspace.core.I18nUtil;
+import org.dspace.core.LogManager;
+import org.dspace.discovery.configuration.DiscoveryConfiguration;
+import org.dspace.discovery.configuration.DiscoveryConfigurationParameters;
+import org.dspace.discovery.configuration.DiscoveryHitHighlightFieldConfiguration;
+import org.dspace.discovery.configuration.DiscoveryHitHighlightingConfiguration;
+import org.dspace.discovery.configuration.DiscoveryMoreLikeThisConfiguration;
+import org.dspace.discovery.configuration.DiscoveryRecentSubmissionsConfiguration;
+import org.dspace.discovery.configuration.DiscoverySearchFilter;
+import org.dspace.discovery.configuration.DiscoverySearchFilterFacet;
+import org.dspace.discovery.configuration.DiscoverySortConfiguration;
+import org.dspace.discovery.configuration.DiscoverySortFieldConfiguration;
+import org.dspace.discovery.configuration.HierarchicalSidebarFacetConfiguration;
 import org.dspace.handle.HandleManager;
 import org.dspace.utils.DSpace;
 import org.springframework.stereotype.Service;
@@ -108,7 +125,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
                     solr = new HttpSolrServer(solrService);
 
                     solr.setBaseURL(solrService);
-
+                    solr.setUseMultiPartPost(true);
                     SolrQuery solrQuery = new SolrQuery()
                             .setQuery("search.resourcetype:2 AND search.resourceid:1");
 
@@ -133,8 +150,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
      *
      * @param context Users Context
      * @param dso     DSpace Object (Item, Collection or Community
-     * @throws java.sql.SQLException
-     * @throws java.io.IOException
+     * @throws SQLException
+     * @throws IOException
      */
     public void indexContent(Context context, DSpaceObject dso)
             throws SQLException {
@@ -149,8 +166,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
      * @param context Users Context
      * @param dso     DSpace Object (Item, Collection or Community
      * @param force   Force update even if not stale.
-     * @throws java.sql.SQLException
-     * @throws java.io.IOException
+     * @throws SQLException
+     * @throws IOException
      */
     public void indexContent(Context context, DSpaceObject dso,
                              boolean force) throws SQLException {
@@ -217,8 +234,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
      *
      * @param context
      * @param dso     DSpace Object, can be Community, Item, or Collection
-     * @throws java.sql.SQLException
-     * @throws java.io.IOException
+     * @throws SQLException
+     * @throws IOException
      */
     public void unIndexContent(Context context, DSpaceObject dso)
             throws SQLException, IOException {
@@ -231,8 +248,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
      * @param context
      * @param dso     DSpace Object, can be Community, Item, or Collection
      * @param commit if <code>true</code> force an immediate commit on SOLR
-     * @throws java.sql.SQLException
-     * @throws java.io.IOException
+     * @throws SQLException
+     * @throws IOException
      */
     public void unIndexContent(Context context, DSpaceObject dso, boolean commit)
             throws SQLException, IOException {
@@ -257,8 +274,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
      * Unindex a Document in the Lucene index.
      * @param context the dspace context
      * @param handle the handle of the object to be deleted
-     * @throws java.io.IOException
-     * @throws java.sql.SQLException
+     * @throws IOException
+     * @throws SQLException
      */
     public void unIndexContent(Context context, String handle) throws IOException, SQLException {
         unIndexContent(context, handle, false);
@@ -268,8 +285,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
      * Unindex a Document in the Lucene Index.
      * @param context the dspace context
      * @param handle the handle of the object to be deleted
-     * @throws java.sql.SQLException
-     * @throws java.io.IOException
+     * @throws SQLException
+     * @throws IOException
      */
     public void unIndexContent(Context context, String handle, boolean commit)
             throws SQLException, IOException {
@@ -398,9 +415,9 @@ public class SolrServiceImpl implements SearchService, IndexingService {
      * database, if not, they are removed.
      *
      * @param force whether or not to force a clean index
-     * @throws java.io.IOException IO exception
-     * @throws java.sql.SQLException sql exception
-     * @throws org.dspace.discovery.SearchServiceException occurs when something went wrong with querying the solr server
+     * @throws IOException IO exception
+     * @throws SQLException sql exception
+     * @throws SearchServiceException occurs when something went wrong with querying the solr server
      */
     public void cleanIndex(boolean force) throws IOException,
             SQLException, SearchServiceException {
@@ -473,17 +490,34 @@ public class SolrServiceImpl implements SearchService, IndexingService {
                 return;
             }
             long start = System.currentTimeMillis();
-            System.out.println("SOLR Search Optimize -- Process Started:"+start);
+            System.out.println("SOLR Search Optimize -- Process Started:" + start);
             getSolr().optimize();
             long finish = System.currentTimeMillis();
-            System.out.println("SOLR Search Optimize -- Process Finished:"+finish);
-            System.out.println("SOLR Search Optimize -- Total time taken:"+(finish-start) + " (ms).");
+            System.out.println("SOLR Search Optimize -- Process Finished:" + finish);
+            System.out.println("SOLR Search Optimize -- Total time taken:" + (finish - start) + " (ms).");
         } catch (SolrServerException sse)
         {
             System.err.println(sse.getMessage());
         } catch (IOException ioe)
         {
             System.err.println(ioe.getMessage());
+        }
+    }
+
+    public void buildSpellCheck() throws SearchServiceException {
+        try {
+            if (getSolr() == null) {
+                return;
+            }
+            SolrQuery solrQuery = new SolrQuery();
+            solrQuery.set("spellcheck", true);
+            solrQuery.set(SpellingParams.SPELLCHECK_BUILD, true);
+            getSolr().query(solrQuery);
+        }catch (SolrServerException e)
+        {
+            //Make sure to also log the exception since this command is usually run from a crontab.
+            log.error(e, e);
+            throw new SearchServiceException(e);
         }
     }
 
@@ -540,9 +574,9 @@ public class SolrServiceImpl implements SearchService, IndexingService {
      * @param handle the handle of the dso
      * @param lastModified the last modified date of the DSpace object
      * @return a boolean indicating if the dso should be re indexed again
-     * @throws java.sql.SQLException sql exception
-     * @throws java.io.IOException io exception
-     * @throws org.dspace.discovery.SearchServiceException if something went wrong with querying the solr server
+     * @throws SQLException sql exception
+     * @throws IOException io exception
+     * @throws SearchServiceException if something went wrong with querying the solr server
      */
     protected boolean requiresIndexing(String handle, Date lastModified)
             throws SQLException, IOException, SearchServiceException {
@@ -591,7 +625,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
     /**
      * @param myitem the item for which our locations are to be retrieved
      * @return a list containing the identifiers of the communities & collections
-     * @throws java.sql.SQLException sql exception
+     * @throws SQLException sql exception
      */
     protected List<String> getItemLocations(Item myitem)
             throws SQLException {
@@ -635,15 +669,47 @@ public class SolrServiceImpl implements SearchService, IndexingService {
 
     /**
      * Write the document to the index under the appropriate handle.
+     *
      * @param doc the solr document to be written to the server
-     * @throws java.io.IOException IO exception
+     * @param streams
+     * @throws IOException IO exception
      */
-    protected void writeDocument(SolrInputDocument doc) throws IOException {
+    protected void writeDocument(SolrInputDocument doc, List<BitstreamContentStream> streams) throws IOException {
 
         try {
             if(getSolr() != null)
             {
-                getSolr().add(doc);
+                if(CollectionUtils.isNotEmpty(streams))
+                {
+                    ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update/extract");
+
+                    for(BitstreamContentStream bce : streams)
+                    {
+                        req.addContentStream(bce);
+                    }
+
+                    ModifiableSolrParams params = new ModifiableSolrParams();
+
+                    //req.setParam(ExtractingParams.EXTRACT_ONLY, "true");
+                    for(String name : doc.getFieldNames())
+                    {
+                        for(Object val : doc.getFieldValues(name))
+                        {
+                             params.add(ExtractingParams.LITERALS_PREFIX + name,val.toString());
+                        }
+                    }
+
+                    req.setParams(params);
+                    req.setParam(ExtractingParams.UNKNOWN_FIELD_PREFIX, "attr_");
+                    req.setParam(ExtractingParams.MAP_PREFIX + "content", "fulltext");
+                    req.setParam(ExtractingParams.EXTRACT_FORMAT, "text");
+                    req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+                    req.process(getSolr());
+                }
+                else
+                {
+                    getSolr().add(doc);
+                }
             }
         } catch (SolrServerException e)
         {
@@ -655,8 +721,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
      * Build a solr document for a DSpace Community.
      *
      * @param community Community to be indexed
-     * @throws java.sql.SQLException
-     * @throws java.io.IOException
+     * @throws SQLException
+     * @throws IOException
      */
     protected void buildDocument(Context context, Community community)
     throws SQLException, IOException {
@@ -696,7 +762,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
             solrServiceIndexPlugin.additionalIndex(context, community, doc);
         }
 
-        writeDocument(doc);
+        writeDocument(doc, null);
     }
 
 
@@ -707,7 +773,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
                 "ds:bitstream/"+bitstream.getID(), null);
 
         // and populate it
-        Date lastModifiedDate = BitstreamUtil.getLastModifiedDate(context,bitstream);
+        Date lastModifiedDate = BitstreamUtil.getLastModifiedDate(context, bitstream);
         String description = bitstream.getDescription();
         String checksum = bitstream.getChecksum();
         String formatDescription = bitstream.getFormatDescription();
@@ -755,15 +821,15 @@ public class SolrServiceImpl implements SearchService, IndexingService {
             solrServiceIndexPlugin.additionalIndex(context, bitstream, doc);
         }
 
-        writeDocument(doc);
+        writeDocument(doc, null);
     }
 
     /**
      * Build a solr document for a DSpace Collection.
      *
      * @param collection Collection to be indexed
-     * @throws java.sql.SQLException sql exception
-     * @throws java.io.IOException IO exception
+     * @throws SQLException sql exception
+     * @throws IOException IO exception
      */
     protected void buildDocument(Context context, Collection collection)
     throws SQLException, IOException {
@@ -811,7 +877,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
             solrServiceIndexPlugin.additionalIndex(context, collection, doc);
         }
 
-        writeDocument(doc);
+        writeDocument(doc, null);
     }
 
     /**
@@ -842,8 +908,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
      *
      * @param context Users Context
      * @param item    The DSpace Item to be indexed
-     * @throws java.sql.SQLException
-     * @throws java.io.IOException
+     * @throws SQLException
+     * @throws IOException
      */
     protected void buildDocument(Context context, Item item)
             throws SQLException, IOException {
@@ -1328,7 +1394,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
         log.debug("  Added Grouping");
 
 
-        Vector<InputStreamReader> readers = new Vector<InputStreamReader>();
+
+        List<BitstreamContentStream> streams = new ArrayList<BitstreamContentStream>();
 
         try {
             // now get full text of any bitstreams in the TEXT bundle
@@ -1346,18 +1413,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
                     for (Bitstream myBitstream : myBitstreams)
                     {
                         try {
-                            InputStreamReader is = new InputStreamReader(
-                                    myBitstream.retrieve()); // get input
-                            readers.add(is);
 
-                            // Add each InputStream to the Indexed Document
-                            String value = IOUtils.toString(is);
-                            doc.addField("fulltext", value);
-
-                            if(hitHighlightingFields.contains("*") || hitHighlightingFields.contains("fulltext"))
-                            {
-                                doc.addField("fulltext_hl", value);
-                            }
+                            streams.add(new BitstreamContentStream(myBitstream));
 
                             log.debug("  Added BitStream: "
                                     + myBitstream.getStoreNumber() + "	"
@@ -1377,16 +1434,6 @@ public class SolrServiceImpl implements SearchService, IndexingService {
         {
             log.error(e.getMessage(), e);
         }
-        finally {
-            Iterator<InputStreamReader> itr = readers.iterator();
-            while (itr.hasNext()) {
-                InputStreamReader reader = itr.next();
-                if (reader != null) {
-                    reader.close();
-                }
-            }
-            log.debug("closed " + readers.size() + " readers");
-        }
 
         //Do any additional indexing, depends on the plugins
         List<SolrServiceIndexPlugin> solrServiceIndexPlugins = new DSpace().getServiceManager().getServicesByType(SolrServiceIndexPlugin.class);
@@ -1397,7 +1444,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
 
         // write the index and close the inputstreamreaders
         try {
-            writeDocument(doc);
+            writeDocument(doc, streams);
             log.info("Wrote Item: " + handle + " to Index");
         } catch (RuntimeException e)
         {
@@ -1590,7 +1637,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
 
         } catch (Exception e)
         {
-            throw new SearchServiceException(e.getMessage(),e);
+            throw new org.dspace.discovery.SearchServiceException(e.getMessage(),e);
         }
     }
 
@@ -1923,7 +1970,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
 
 
     /** Simple means to return the search result as an InputStream */
-    public InputStream searchAsInputStream(DiscoverQuery query) throws SearchServiceException, IOException {
+    public java.io.InputStream searchAsInputStream(DiscoverQuery query) throws SearchServiceException, java.io.IOException {
         if(getSolr() == null)
         {
             return null;

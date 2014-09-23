@@ -3,14 +3,14 @@
     <groupId>org.dspace</groupId>
     <artifactId>dspace-dataone</artifactId>
     <packaging>pom</packaging>
-    <version>4.1</version>
+    <version>4.2.0</version>
     <name>DSpace Data One Member Node : Parent Module</name>
     <url>http://demo.dspace.org</url>
 
     <parent>
         <groupId>org.dspace</groupId>
         <artifactId>dspace-parent</artifactId>
-        <version>4.1</version>
+        <version>4.2</version>
         <relativePath>..</relativePath>
     </parent>
 

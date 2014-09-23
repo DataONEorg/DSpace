@@ -98,20 +98,20 @@
        <dependency>
            <groupId>org.dspace</groupId>
            <artifactId>dataone-api</artifactId>
-           <version>${version}</version>
+           <version>${dataone.version}</version>
        </dependency>
 
        <dependency>
            <groupId>org.dspace</groupId>
            <artifactId>dataone-xmlui</artifactId>
-           <version>${version}</version>
+           <version>${dataone.version}</version>
            <classifier>classes</classifier>
        </dependency>
 
        <dependency>
            <groupId>org.dspace</groupId>
            <artifactId>dataone-xmlui</artifactId>
-           <version>${version}</version>
+           <version>${dataone.version}</version>
            <type>war</type>
        </dependency>
 
