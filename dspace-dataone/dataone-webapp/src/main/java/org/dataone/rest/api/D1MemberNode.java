@@ -18,10 +18,7 @@ import org.dataone.service.types.v1_1.QueryEngineList;
 import org.dspace.app.util.ContextUtil;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.authorize.AuthorizeManager;
-import org.dspace.content.Bitstream;
-import org.dspace.content.BitstreamUtil;
-import org.dspace.content.DSpaceObject;
-import org.dspace.content.Item;
+import org.dspace.content.*;
 import org.dspace.core.ConfigurationManager;
 import org.dspace.core.Constants;
 import org.dspace.core.Email;
@@ -785,8 +782,13 @@ public class D1MemberNode {
             if(identifier != null)
                 solrQuery.addFilterQuery("identifier_s:" + ClientUtils.escapeQueryChars(identifier));
 
-            if(formatId != null)
+            if(formatId != null){
+                // Assure that inconsistent ORE namespace without final / is matched on successfully.
+                if(OREManifestWriter.ORE.NS.contains(ClientUtils.escapeQueryChars(formatId)))
+                     formatId = OREManifestWriter.ORE.NS;
+
                 solrQuery.addFilterQuery("formatId_s:" + ClientUtils.escapeQueryChars(formatId));
+            }
 
             if(replicaStatus != null)
                 solrQuery.addFilterQuery("replicaStatus:" + replicaStatus);

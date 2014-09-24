@@ -781,8 +781,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
         BitstreamFormat format = bitstream.getFormat();
         String formatId = format.getMIMEType();
 
-        if(format.getShortDescription().equals("http://www.openarchives.org/ore/terms"))
-            formatId = "http://www.openarchives.org/ore/terms";
+        if(format.getShortDescription().equals(OREManifestWriter.ORE.NS))
+            formatId = OREManifestWriter.ORE.NS;
         else if(format.getShortDescription().equals("http://www.loc.gov/METS/"))
             formatId = "http://www.loc.gov/METS/";
 
