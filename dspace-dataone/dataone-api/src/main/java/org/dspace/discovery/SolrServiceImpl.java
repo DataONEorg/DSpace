@@ -780,8 +780,15 @@ public class SolrServiceImpl implements SearchService, IndexingService {
         String userDescription = bitstream.getUserFormatDescription();
         BitstreamFormat format = bitstream.getFormat();
         String formatId = format.getMIMEType();
+
+        if(format.getShortDescription().equals("http://www.openarchives.org/ore/terms"))
+            formatId = "http://www.openarchives.org/ore/terms";
+        else if(format.getShortDescription().equals("http://www.loc.gov/METS/"))
+            formatId = "http://www.loc.gov/METS/";
+
         String name = bitstream.getName();
         List<String> toIgnoreMetadataFields = SearchUtils.getIgnoredMetadataFields(bitstream.getType());
+
         DiscoveryConfiguration discoveryConfiguration = SearchUtils.getDiscoveryConfiguration(bitstream);
         DiscoveryHitHighlightingConfiguration highlightingConfiguration = discoveryConfiguration.getHitHighlightingConfiguration();
         List<String> highlightedMetadataFields = new ArrayList<String>();
@@ -793,21 +800,27 @@ public class SolrServiceImpl implements SearchService, IndexingService {
             }
         }
 
+        doc.addField("deleted_b", BitstreamUtil.isDeleted(bitstream) );
 
         if(description!=null)
-        addContainerMetadataField(doc, highlightedMetadataFields, toIgnoreMetadataFields, "description", description);
+            addContainerMetadataField(doc, highlightedMetadataFields, toIgnoreMetadataFields, "description", description);
+
         if(checksum!=null)
-        addContainerMetadataField(doc, highlightedMetadataFields, toIgnoreMetadataFields, "checksum", checksum);
+            doc.addField("checksum_s", checksum);
+
         if(formatId!=null)
-        addContainerMetadataField(doc, highlightedMetadataFields, toIgnoreMetadataFields, "formatId", formatId);
+            doc.addField("formatId_s", formatId);
+
         if(name!=null)
-        addContainerMetadataField(doc, highlightedMetadataFields, toIgnoreMetadataFields, "name", name);
-        addContainerMetadataField(doc, highlightedMetadataFields, toIgnoreMetadataFields, "identifier", "ds:bitstream/"+bitstream.getID());
-        addContainerMetadataField(doc, highlightedMetadataFields, toIgnoreMetadataFields, "size", ""+bitstream.getSize());
+            addContainerMetadataField(doc, highlightedMetadataFields, toIgnoreMetadataFields, "name", name);
+
+        doc.addField("identifier_s", "ds:bitstream/"+bitstream.getID());
+
+        doc.addField("size_l", bitstream.getSize());
+
         if(lastModifiedDate!=null)
         {
             addContainerMetadataField(doc, highlightedMetadataFields, toIgnoreMetadataFields, "dateSysMetadataModified",lastModifiedDate.toString());
-            //addContainerMetadataField(doc, highlightedMetadataFields, toIgnoreMetadataFields, "dateSysMetadataModified_dt",lastModifiedDate);
             doc.addField("dateSysMetadataModified_dt", lastModifiedDate);
             doc.addField("dateSysMetadataModified_sort", lastModifiedDate);
         }

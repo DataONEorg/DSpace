@@ -669,6 +669,9 @@ public class ExtendedBitstreamStorageManager
         {
             context = new Context();
 
+            // TODO : FILTER DELETABLE BITSTREAMS ON PRESENCE IN VERSION OR BITSTREAM TABLES. (ALTERNATIVE, LET FKEY CONSTRAINT VOLATION ELIMINATE BITSREAMS NOT TO BE DELETED
+            // example   "select Bitsream.* from Bitstream left join Version2Bitstream on Bitstream.bitstream_id = Version2Bitstream.bitstream_id where deleted ='1'";
+
             String myQuery = "select * from Bitstream where deleted = '1'";
 
             List<TableRow> storage = DatabaseManager.queryTable(context, "Bitstream", myQuery)

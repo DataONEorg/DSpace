@@ -25,6 +25,10 @@ public class BitstreamUtil {
         bitstream.delete();
     }
 
+    public static boolean isDeleted(Bitstream bitstream) throws SQLException {
+        return bitstream.isDeleted();
+    }
+
     /**
      * Add support to retrieve the last modified date. Ideally, this should be moved inside Bitstream class in
      * future DSpace version.

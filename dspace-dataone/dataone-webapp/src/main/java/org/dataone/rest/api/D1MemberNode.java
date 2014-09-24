@@ -77,7 +77,7 @@ public class D1MemberNode {
      * @throws InsufficientResources
      */
     @GET
-    @Path("/v1/monitor/ping")
+    @Path("/monitor/ping")
     @Produces({MediaType.APPLICATION_XML})
     public Node doPing() throws NotImplemented, ServiceFailure, InsufficientResources
     {
@@ -102,7 +102,7 @@ public class D1MemberNode {
      * @throws ServiceFailure
      */
     @GET
-    @Path("/v1/node")
+    @Path("/node")
     @Produces({MediaType.APPLICATION_XML})
     public Node getCapabilities() throws NotImplemented, ServiceFailure
     {
@@ -211,7 +211,7 @@ public class D1MemberNode {
      * @throws ServiceFailure (errorCode=500, detailCode=1490)
      */
     @GET
-    @Path("/v1/log")
+    @Path("/log")
     @Produces({MediaType.APPLICATION_XML})
     public Log getLogRecords(
             @QueryParam("fromDate") String fromDate,
@@ -310,7 +310,7 @@ public class D1MemberNode {
 
      */
     @GET
-    @Path("/v1/object/{pid: (.*)+}")
+    @Path("/object/{pid: (.*)+}")
     public Response getObject(@Context HttpServletRequest request, @PathParam("pid") String pid) throws InvalidToken, NotAuthorized, NotImplemented, ServiceFailure, NotFound, InsufficientResources {
 
         try {
@@ -417,7 +417,7 @@ public class D1MemberNode {
      *
      */
     @GET
-    @Path("/v1/meta/{pid: (.*)+}")
+    @Path("/meta/{pid: (.*)+}")
     @Produces({MediaType.APPLICATION_XML})
     public SystemMetadata getSystemMetadata(@Context HttpServletRequest request, @PathParam("pid") String pid) throws InvalidToken, NotAuthorized, NotImplemented, ServiceFailure, NotFound {
 
@@ -561,7 +561,7 @@ public class D1MemberNode {
      * @throws NotFound (errorCode=404, detailCode=1380)
      */
     @HEAD
-    @Path("/v1/object/{pid: (.*)+}")
+    @Path("/object/{pid: (.*)+}")
     @Produces({MediaType.APPLICATION_XML})
     public Response getDescribeObject(@Context HttpServletRequest request, @PathParam("pid") String pid)  throws InvalidRequest, InvalidToken, NotAuthorized, NotImplemented, ServiceFailure, NotFound {
 
@@ -648,7 +648,7 @@ public class D1MemberNode {
      * @throws NotFound (errorCode=404, detailCode=1420)
      */
     @GET
-    @Path("/v1/checksum/{pid: (.*)+}")
+    @Path("/checksum/{pid: (.*)+}")
     @Produces({MediaType.APPLICATION_XML})
     public Checksum getChecksum(@Context HttpServletRequest request, @PathParam("pid") String pid, @QueryParam("checksumAlgorithm") String checksumAlgorithm) throws InvalidRequest, InvalidToken, NotAuthorized, NotImplemented, ServiceFailure, NotFound {
 
@@ -763,7 +763,7 @@ public class D1MemberNode {
      * @throws ServiceFailure (errorCode=500, detailCode=1580)
      */
     @GET
-    @Path("/v1/object")
+    @Path("/object")
     @Produces({MediaType.APPLICATION_XML})
     public ObjectList listObjects(
             @QueryParam("identifier") String identifier,
@@ -783,10 +783,10 @@ public class D1MemberNode {
             solrQuery.addSort(new SolrQuery.SortClause("dateSysMetadataModified_dt",SolrQuery.ORDER.desc));
 
             if(identifier != null)
-                solrQuery.addFilterQuery("identifier:" + ClientUtils.escapeQueryChars(identifier));
+                solrQuery.addFilterQuery("identifier_s:" + ClientUtils.escapeQueryChars(identifier));
 
             if(formatId != null)
-                solrQuery.addFilterQuery("formatId:" + ClientUtils.escapeQueryChars(formatId));
+                solrQuery.addFilterQuery("formatId_s:" + ClientUtils.escapeQueryChars(formatId));
 
             if(replicaStatus != null)
                 solrQuery.addFilterQuery("replicaStatus:" + replicaStatus);
@@ -837,20 +837,21 @@ public class D1MemberNode {
 
             for(SolrDocument solrDocument : solrDocuments)
             {
-                ObjectInfo objectInfo = new ObjectInfo();
+                String id = (String) solrDocument.getFirstValue("identifier_s");
+                String format = (String) solrDocument.getFirstValue("formatId_s");
+                Date dateSysMetadataModified = (Date) solrDocument.getFirstValue("dateSysMetadataModified_dt");
+                Long size = (Long) solrDocument.getFirstValue("size_l");
+                String checksum = (String)solrDocument.getFirstValue("checksum_s");
 
-                String id = (String) solrDocument.getFirstValue("identifier");
+                ObjectInfo objectInfo = new ObjectInfo();
                 Identifier identifierObj = new Identifier();
                 identifierObj.setValue(id != null ? id : "null");
                 objectInfo.setIdentifier(identifierObj);
 
-                String format = (String) solrDocument.getFirstValue("formatId");
                 ObjectFormatIdentifier objectFormat = new ObjectFormatIdentifier();
                 objectFormat.setValue(format != null ? format : "octet/stream");
                 objectInfo.setFormatId(objectFormat);
 
-
-                Date dateSysMetadataModified = (Date) solrDocument.getFirstValue("dateSysMetadataModified_dt");
                 try {
                     objectInfo.setDateSysMetadataModified(dateSysMetadataModified != null ? dateSysMetadataModified : new Date());
                 }catch (Exception e)
@@ -858,12 +859,9 @@ public class D1MemberNode {
                     log.debug(e.getMessage(),e);
                 }
 
-                String size = (String) solrDocument.getFirstValue("size");
-                size = size != null && Integer.valueOf(size) > 0 ? size : "0";
-                BigInteger sizeObject = new BigInteger(size);
+                BigInteger sizeObject = new BigInteger(size != null && size.longValue() > 0 ? size.toString() : "0");
                 objectInfo.setSize(sizeObject);
 
-                String checksum = (String)solrDocument.getFirstValue("checksum");
                 Checksum checksumObject = new Checksum();
                 checksumObject.setValue(checksum == null || "0".equals(size) ? "d41d8cd98f00b204e9800998ecf8427e" : checksum);
                 checksumObject.setAlgorithm("MD5");
@@ -919,7 +917,7 @@ public class D1MemberNode {
      * @throws ServiceFailure   (errorCode=500, detailCode=2161)
      */
     @POST
-    @Path("/v1/error")
+    @Path("/error")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces({MediaType.APPLICATION_XML})
     public boolean synchronizationFailed(
@@ -976,7 +974,7 @@ public class D1MemberNode {
      * to insufficient resources such as CPU, memory, or bandwidth being over utilized.
      */
     @GET
-    @Path("/v1/replica/{pid: (.*)+}")
+    @Path("/replica/{pid: (.*)+}")
     public Response getReplica(@Context HttpServletRequest request, @PathParam("pid") String pid) throws InvalidToken, NotAuthorized, NotImplemented, ServiceFailure, NotFound, InsufficientResources {
 
         try {
@@ -1056,7 +1054,7 @@ public class D1MemberNode {
      */
     @GET
 
-    @Path("/v1/query/{queryEngine}/{query}")
+    @Path("/query/{queryEngine}/{query}")
     @Produces({MediaType.APPLICATION_XML})
     public InputStream query(
             @PathParam("queryEngine") String queryEngine,
@@ -1066,7 +1064,7 @@ public class D1MemberNode {
     }
 
     @GET
-    @Path("/v1/query/{queryType}")
+    @Path("/query/{queryType}")
     @Produces({MediaType.APPLICATION_XML})
     public QueryEngineDescription getQueryEngineDescription(
             @PathParam("queryType") String queryEngine) throws InvalidToken, ServiceFailure, NotAuthorized, NotImplemented, NotFound {
@@ -1074,14 +1072,14 @@ public class D1MemberNode {
     }
 
     @GET
-    @Path("/v1/query")
+    @Path("/query")
     @Produces({MediaType.APPLICATION_XML})
     public QueryEngineList listQueryEngines() throws InvalidToken, ServiceFailure, NotAuthorized, NotImplemented {
         throw new NotImplemented("","");
     }
 
     @GET
-    @Path("/v1/isAuthorized/{pid}")
+    @Path("/isAuthorized/{pid}")
     @Produces({MediaType.APPLICATION_XML})
     public boolean isAuthorized(
             @PathParam("pid") String pid,

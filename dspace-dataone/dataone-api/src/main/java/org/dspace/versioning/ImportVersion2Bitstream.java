@@ -27,8 +27,32 @@ public class ImportVersion2Bitstream {
 
     private static final Logger log = Logger.getLogger(ImportVersion2Bitstream.class);
 
-    public static void main(String[] argv)
+    public static void main(String[] args)
     {
+        String usage = "org.dspace.versioning.ImportVersion2Bitstream [-f] or nothing.";
+        Options options = new Options();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine line = null;
+
+        options
+                .addOption(OptionBuilder
+                        .isRequired(false)
+                        .withDescription(
+                                "if updating existing index, force each handle to be reindexed even if uptodate")
+                        .create("f"));
+
+        try {
+            line = new PosixParser().parse(options, args);
+        } catch (Exception e) {
+            // automatically generate the help statement
+            formatter.printHelp(usage, e.getMessage(), options, "");
+            System.exit(1);
+        }
+
+
+        boolean force = line.hasOption("f");
+
+
         Context context = null;
         try{
             context = new Context();
@@ -100,6 +124,19 @@ public class ImportVersion2Bitstream {
                                     AuthorizeManager.inheritPolicies(context, item, bitstream);
                                     updated = true;
                                 }
+                                else if(force)
+                                {
+                                    Bitstream old = version.getAIPBitstream();
+
+                                    AIPManifestWriter aipManifestWriter = new AIPManifestWriter();
+                                    Bitstream bitstream = aipManifestWriter.updateAIP(context, vItem, true);
+                                    version.setAIPBitstream(bitstream.getID());
+                                    AuthorizeManager.inheritPolicies(context, item, bitstream);
+                                    updated = true;
+
+                                    BitstreamUtil.delete(old);
+
+                                }
                                 else
                                 {
                                     AuthorizeManager.removePoliciesActionFilter(context, version.getAIPBitstream(), Constants.READ);
@@ -125,6 +162,19 @@ public class ImportVersion2Bitstream {
                                     version.setOREBitstream(b.getID());
                                     AuthorizeManager.inheritPolicies(context, item, b);
                                     updated = true;
+                                }
+                                else if(force)
+                                {
+                                    Bitstream old = version.getOREBitstream();
+
+                                    OREManifestWriter oreManifestWriter = new OREManifestWriter();
+                                    Bitstream b = oreManifestWriter.updateORE(context,vItem,version, true);
+                                    version.setOREBitstream(b.getID());
+                                    AuthorizeManager.inheritPolicies(context, item, b);
+                                    updated = true;
+
+                                    BitstreamUtil.delete(old);
+
                                 }
                                 else
                                 {

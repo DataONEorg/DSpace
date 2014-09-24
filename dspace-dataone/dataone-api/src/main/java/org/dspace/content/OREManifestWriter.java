@@ -42,9 +42,9 @@ public class OREManifestWriter {
     protected String retrieveIdentifier(String id)
     {
         try {
-            return URLEncoder.encode("dc:bitstream/" + id, "UTF-8");
+            return URLEncoder.encode("ds:bitstream/" + id, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            return URLEncoder.encode("dc:bitstream/" + id);
+            return URLEncoder.encode("ds:bitstream/" + id);
         }
     }
 
