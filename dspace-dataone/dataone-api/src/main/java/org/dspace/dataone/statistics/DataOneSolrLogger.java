@@ -152,7 +152,7 @@ public class DataOneSolrLogger {
         if (pidFilter != null)
         {
             String escaped = LUCENE_PATTERN.matcher(pidFilter).replaceAll(REPLACEMENT_STRING);
-            solrQuery.addFilterQuery("identifier:" + escaped + "*");
+            solrQuery.addFilterQuery("identifier:" + escaped);
             log.info("Adding pid filter: " + escaped);
         }
 
