@@ -512,6 +512,9 @@ public class D1MemberNode {
         } catch (IdentifierNotFoundException e) {
             log.error(e.getMessage());
             throw new NotFound("1060", pid + " Not Found: " + e.getMessage());
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new NotFound("1060", pid + " Not Found: " + e.getMessage());
         }
 
     }
@@ -782,14 +785,15 @@ public class D1MemberNode {
             if(identifier != null)
                 solrQuery.addFilterQuery("identifier_s:" + ClientUtils.escapeQueryChars(identifier));
 
-            if(formatId != null){
-                // Assure that inconsistent ORE namespace without final / is matched on successfully.
-                if(OREManifestWriter.ORE.NS.contains(ClientUtils.escapeQueryChars(formatId)))
-                     formatId = OREManifestWriter.ORE.NS;
+            if(formatId != null)
+            {
+                if(OREManifestWriter.ORE.NS.contains(formatId))
+                {
+                    formatId = OREManifestWriter.ORE.NS;
+                }
 
                 solrQuery.addFilterQuery("formatId_s:" + ClientUtils.escapeQueryChars(formatId));
             }
-
             if(replicaStatus != null)
                 solrQuery.addFilterQuery("replicaStatus:" + replicaStatus);
 
