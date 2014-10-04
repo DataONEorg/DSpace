@@ -7,10 +7,7 @@
  */
 package org.dspace.versioning;
 
-import org.dspace.content.Bitstream;
-import org.dspace.content.Bundle;
-import org.dspace.content.Item;
-import org.dspace.content.WorkspaceItem;
+import org.dspace.content.*;
 import org.dspace.core.Context;
 import org.dspace.eperson.EPerson;
 import org.dspace.storage.rdbms.TableRow;
@@ -113,8 +110,18 @@ public class VersionImpl implements Version {
     @Override
     public void setAIPBitstream(int bitstream_id) {
         try {
+
+            Bitstream old = getAIPBitstream();
+
             this.bitstream = Bitstream.find(myContext, bitstream_id);
             myRow.setColumn(VersionDAO.BITSTREAM_ID, bitstream_id);
+
+            // Fully delete previous bitstream
+            if(old != null)
+            {
+                BitstreamUtil.delete(this.myContext, old, true);
+            }
+
         } catch (SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
@@ -135,8 +142,18 @@ public class VersionImpl implements Version {
     @Override
     public void setOREBitstream(int bitstream_id) {
         try {
+
+            Bitstream old = getOREBitstream();
+
             this.bitstream = Bitstream.find(myContext, bitstream_id);
             myRow.setColumn(VersionDAO.ORE_BITSTREAM_ID, bitstream_id);
+
+            // Fully delete previous bitstream
+            if(old != null)
+            {
+                BitstreamUtil.delete(this.myContext, old, true);
+            }
+
         } catch (SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
         }

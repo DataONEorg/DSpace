@@ -392,6 +392,12 @@ public class ExtendedBitstreamStorageManager
             {
                 bitstream.setColumn("bitstream_format_id", format.getID());
             }
+            else
+            {
+                bitstream.setColumn("bitstream_format_id", BitstreamFormat.findUnknown(context).getID());
+                bitstream.setColumnNull("user_format_description");
+            }
+
             /*
              * Set the store number of the new bitstream If you want to use some
              * other method of working out where to put a new bitstream, here's
@@ -646,6 +652,79 @@ public class ExtendedBitstreamStorageManager
                         "update Bitstream set deleted = '1' where bitstream_id = ? ",
                         id);
     }
+
+    public static void cleanup(Context context, int id, boolean deleteDbRecords, boolean verbose) throws SQLException, IOException
+    {
+            TableRow bitstream = DatabaseManager.find(context, "bitstream", id);
+
+            int bid = bitstream.getIntColumn("bitstream_id");
+
+            GeneralFile file = getFile(bitstream);
+
+            BitstreamInfoDAO bitstreamInfoDAO = new BitstreamInfoDAO();
+
+            // This is a small chance that this is a file which is
+            // being stored -- get it next time.
+            if (isRecent(file))
+            {
+                log.debug("file is recent");
+                return;
+            }
+
+            if (deleteDbRecords)
+            {
+                log.debug("deleting db record");
+                if (verbose)
+                {
+                    System.out.println(" - Deleting bitstream information (ID: " + bid + ")");
+                }
+                bitstreamInfoDAO.deleteBitstreamInfoWithHistory(bid);
+                if (verbose)
+                {
+                    System.out.println(" - Deleting bitstream record from database (ID: " + bid + ")");
+                }
+                DatabaseManager.delete(context, "Bitstream", bid);
+            }
+
+            if (isRegisteredBitstream(bitstream.getStringColumn("internal_id"))) {
+                return;			// do not delete registered bitstreams
+            }
+
+            // Since versioning allows for multiple bitstream files,
+            // check if the internal identifier isn't used in another bitstream before deleting file
+            TableRow duplicateBitRow = DatabaseManager.querySingleTable(context, "Bitstream",
+                    "SELECT * FROM Bitstream WHERE internal_id = ? AND bitstream_id <> ?", bitstream.getStringColumn("internal_id"), bid);
+            if(duplicateBitRow == null)
+            {
+                boolean success = file.delete();
+
+                String message = ("Deleted bitstream " + bid + " (file "
+                        + file.getAbsolutePath() + ") with result "
+                        + success);
+                if (log.isDebugEnabled())
+                {
+                    log.debug(message);
+                }
+                if (verbose)
+                {
+                    System.out.println(message);
+                }
+
+                // if the file was deleted then
+                // try deleting the parents
+                // Otherwise the cleanup script is set to
+                // leave the db records then the file
+                // and directories have already been deleted
+                // if this is turned off then it still looks like the
+                // file exists
+                if( success )
+                {
+                    deleteParents(file);
+                }
+            }
+
+            System.out.print("Transaction will still need to be commited");
+        }
 
     /**
      * Clean up the bitstream storage area. This method deletes any bitstreams

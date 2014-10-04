@@ -481,6 +481,20 @@ public class D1MemberNode {
                 ap.setAllowList(Collections.singletonList(ar));
                 systemMetadata.setAccessPolicy(ap);
 
+                Bitstream obsoletedByBitstream = BitstreamUtil.getObsoletedBy(context,bitstream);
+                if(obsoletedByBitstream!=null)
+                {
+                    Identifier obsoletedByIdentifier = new Identifier();
+                    obsoletedByIdentifier.setValue("ds:bitstream/"+obsoletedByBitstream.getID());
+                    systemMetadata.setObsoletedBy(obsoletedByIdentifier);
+                }
+
+                Bitstream obsoleteBitstream = BitstreamUtil.getObsoletes(context,bitstream);
+                if(obsoleteBitstream!=null){
+                    Identifier obsoleteIdentifier = new Identifier();
+                    obsoleteIdentifier.setValue("ds:bitstream/"+obsoleteBitstream.getID());
+                    systemMetadata.setObsoletes(obsoleteIdentifier);
+                }
                  /*
                 <allow>
                 <subject>public</subject>

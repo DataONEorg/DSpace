@@ -84,19 +84,6 @@ public class BitstreamStorageOutputStream extends DigestOutputStream {
 
         log.info(LogManager.getHeader(context, "create_bitstream", "bitstream_id=" + bitstream_id));
 
-        // Set the format to "unknown"
-        BitstreamFormat bitstreamFormat = null;
-
-        try {
-            bitstreamFormat = BitstreamFormat.findUnknown(context);
-            // Remove user type description
-            bitstream.setColumnNull("user_format_description");
-            // Update the ID in the table row
-            bitstream.setColumn("bitstream_format_id", bitstreamFormat.getID());
-        } catch (Exception e) {
-            throw new IOException(e.getMessage(),e);
-        }
-
         context.addEvent(new Event(Event.CREATE, Constants.BITSTREAM, bitstream_id, null));
 
     }

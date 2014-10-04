@@ -356,6 +356,7 @@ public class InternalDSpaceAIPDisseminator extends AbstractMETSDisseminator
             String result[] = new String[2];
             result[0] = "MODS";
             result[1] = "DIM";
+            result[2] = "QDC";
             return result;
         }
         else

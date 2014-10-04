@@ -116,26 +116,13 @@ public class ImportVersion2Bitstream {
                             {
                                 boolean updated = false;
 
-                                if(version.getAIPBitstream() == null)
+                                if(version.getAIPBitstream() == null || force)
                                 {
                                     AIPManifestWriter aipManifestWriter = new AIPManifestWriter();
                                     Bitstream bitstream = aipManifestWriter.updateAIP(context, vItem, true);
                                     version.setAIPBitstream(bitstream.getID());
                                     AuthorizeManager.inheritPolicies(context, item, bitstream);
                                     updated = true;
-                                }
-                                else if(force)
-                                {
-                                    Bitstream old = version.getAIPBitstream();
-
-                                    AIPManifestWriter aipManifestWriter = new AIPManifestWriter();
-                                    Bitstream bitstream = aipManifestWriter.updateAIP(context, vItem, true);
-                                    version.setAIPBitstream(bitstream.getID());
-                                    AuthorizeManager.inheritPolicies(context, item, bitstream);
-                                    updated = true;
-
-                                    BitstreamUtil.delete(old);
-
                                 }
                                 else
                                 {
@@ -155,26 +142,13 @@ public class ImportVersion2Bitstream {
 
                                 }
 
-                                if(version.getOREBitstream() == null)
+                                if(version.getOREBitstream() == null || force)
                                 {
                                     OREManifestWriter oreManifestWriter = new OREManifestWriter();
                                     Bitstream b = oreManifestWriter.updateORE(context,vItem,version, true);
                                     version.setOREBitstream(b.getID());
                                     AuthorizeManager.inheritPolicies(context, item, b);
                                     updated = true;
-                                }
-                                else if(force)
-                                {
-                                    Bitstream old = version.getOREBitstream();
-
-                                    OREManifestWriter oreManifestWriter = new OREManifestWriter();
-                                    Bitstream b = oreManifestWriter.updateORE(context,vItem,version, true);
-                                    version.setOREBitstream(b.getID());
-                                    AuthorizeManager.inheritPolicies(context, item, b);
-                                    updated = true;
-
-                                    BitstreamUtil.delete(old);
-
                                 }
                                 else
                                 {
@@ -216,6 +190,8 @@ public class ImportVersion2Bitstream {
 
 
                             }
+
+                            context.commit();
 
                         }
                     }
