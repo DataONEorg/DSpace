@@ -32,6 +32,9 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Required;
+import org.springframework.stereotype.Component;
 
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
@@ -55,11 +58,15 @@ import java.util.*;
  * @author Mini Pillai
  */
 @Path("/")
+@Component
 public class D1MemberNode {
 
-    MNCore mnCore = new DSpace()
-            .getServiceManager()
-            .getServiceByName("org.dataone.service.mn.tier1.v1.MNCore",MNCore.class);
+    @Autowired
+    public void setNode(Node node) {
+        this.node = node;
+    }
+
+    Node node;
 
     DataOneSolrLogger dataOneSolrLogger = new DataOneSolrLogger();
 
@@ -74,7 +81,20 @@ public class D1MemberNode {
      * @throws InsufficientResources
      */
     @GET
-    @Path("/monitor/ping")
+    @Path("/")
+    @Produces({MediaType.APPLICATION_XML})
+    public Node doRootPing() throws NotImplemented, ServiceFailure, InsufficientResources
+    {
+        return doPing();
+    }
+    /**
+     *
+     * @throws NotImplemented
+     * @throws ServiceFailure
+     * @throws InsufficientResources
+     */
+    @GET
+    @Path("/v1/monitor/ping")
     @Produces({MediaType.APPLICATION_XML})
     public Node doPing() throws NotImplemented, ServiceFailure, InsufficientResources
     {
@@ -89,7 +109,9 @@ public class D1MemberNode {
             throw new ServiceFailure("2042",e.getMessage());
         }
 
-        return mnCore.getCapabilities();
+        node.getPing().setLastSuccess(new Date());
+
+        return node;
     }
 
     /**
@@ -99,13 +121,13 @@ public class D1MemberNode {
      * @throws ServiceFailure
      */
     @GET
-    @Path("/node")
+    @Path("/v1/node")
     @Produces({MediaType.APPLICATION_XML})
     public Node getCapabilities() throws NotImplemented, ServiceFailure
     {
-        if(mnCore != null)
+        if(node != null)
         {
-            return mnCore.getCapabilities();
+            return node;
         }
         else
         {
@@ -208,7 +230,7 @@ public class D1MemberNode {
      * @throws ServiceFailure (errorCode=500, detailCode=1490)
      */
     @GET
-    @Path("/log")
+    @Path("/v1/log")
     @Produces({MediaType.APPLICATION_XML})
     public Log getLogRecords(
             @QueryParam("fromDate") String fromDate,
@@ -307,7 +329,7 @@ public class D1MemberNode {
 
      */
     @GET
-    @Path("/object/{pid: (.*)+}")
+    @Path("/v1/object/{pid: (.*)+}")
     public Response getObject(@Context HttpServletRequest request, @PathParam("pid") String pid) throws InvalidToken, NotAuthorized, NotImplemented, ServiceFailure, NotFound, InsufficientResources {
 
         try {
@@ -414,7 +436,7 @@ public class D1MemberNode {
      *
      */
     @GET
-    @Path("/meta/{pid: (.*)+}")
+    @Path("/v1/meta/{pid: (.*)+}")
     @Produces({MediaType.APPLICATION_XML})
     public SystemMetadata getSystemMetadata(@Context HttpServletRequest request, @PathParam("pid") String pid) throws InvalidToken, NotAuthorized, NotImplemented, ServiceFailure, NotFound {
 
@@ -575,7 +597,7 @@ public class D1MemberNode {
      * @throws NotFound (errorCode=404, detailCode=1380)
      */
     @HEAD
-    @Path("/object/{pid: (.*)+}")
+    @Path("/v1/object/{pid: (.*)+}")
     @Produces({MediaType.APPLICATION_XML})
     public Response getDescribeObject(@Context HttpServletRequest request, @PathParam("pid") String pid)  throws InvalidRequest, InvalidToken, NotAuthorized, NotImplemented, ServiceFailure, NotFound {
 
@@ -662,7 +684,7 @@ public class D1MemberNode {
      * @throws NotFound (errorCode=404, detailCode=1420)
      */
     @GET
-    @Path("/checksum/{pid: (.*)+}")
+    @Path("/v1/checksum/{pid: (.*)+}")
     @Produces({MediaType.APPLICATION_XML})
     public Checksum getChecksum(@Context HttpServletRequest request, @PathParam("pid") String pid, @QueryParam("checksumAlgorithm") String checksumAlgorithm) throws InvalidRequest, InvalidToken, NotAuthorized, NotImplemented, ServiceFailure, NotFound {
 
@@ -777,7 +799,7 @@ public class D1MemberNode {
      * @throws ServiceFailure (errorCode=500, detailCode=1580)
      */
     @GET
-    @Path("/object")
+    @Path("/v1/object")
     @Produces({MediaType.APPLICATION_XML})
     public ObjectList listObjects(
             @QueryParam("identifier") String identifier,
@@ -937,7 +959,7 @@ public class D1MemberNode {
      * @throws ServiceFailure   (errorCode=500, detailCode=2161)
      */
     @POST
-    @Path("/error")
+    @Path("/v1/error")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces({MediaType.APPLICATION_XML})
     public boolean synchronizationFailed(
@@ -994,7 +1016,7 @@ public class D1MemberNode {
      * to insufficient resources such as CPU, memory, or bandwidth being over utilized.
      */
     @GET
-    @Path("/replica/{pid: (.*)+}")
+    @Path("/v1/replica/{pid: (.*)+}")
     public Response getReplica(@Context HttpServletRequest request, @PathParam("pid") String pid) throws InvalidToken, NotAuthorized, NotImplemented, ServiceFailure, NotFound, InsufficientResources {
 
         try {
@@ -1074,7 +1096,7 @@ public class D1MemberNode {
      */
     @GET
 
-    @Path("/query/{queryEngine}/{query}")
+    @Path("/v1/query/{queryEngine}/{query}")
     @Produces({MediaType.APPLICATION_XML})
     public InputStream query(
             @PathParam("queryEngine") String queryEngine,
@@ -1084,7 +1106,7 @@ public class D1MemberNode {
     }
 
     @GET
-    @Path("/query/{queryType}")
+    @Path("/v1/query/{queryType}")
     @Produces({MediaType.APPLICATION_XML})
     public QueryEngineDescription getQueryEngineDescription(
             @PathParam("queryType") String queryEngine) throws InvalidToken, ServiceFailure, NotAuthorized, NotImplemented, NotFound {
@@ -1092,14 +1114,14 @@ public class D1MemberNode {
     }
 
     @GET
-    @Path("/query")
+    @Path("/v1/query")
     @Produces({MediaType.APPLICATION_XML})
     public QueryEngineList listQueryEngines() throws InvalidToken, ServiceFailure, NotAuthorized, NotImplemented {
         throw new NotImplemented("","");
     }
 
     @GET
-    @Path("/isAuthorized/{pid}")
+    @Path("/v1/isAuthorized/{pid}")
     @Produces({MediaType.APPLICATION_XML})
     public boolean isAuthorized(
             @PathParam("pid") String pid,

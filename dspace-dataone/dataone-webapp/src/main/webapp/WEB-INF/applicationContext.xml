@@ -12,14 +12,119 @@
         xmlns="http://www.springframework.org/schema/beans"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:util="http://www.springframework.org/schema/util"
+        xmlns:context="http://www.springframework.org/schema/context"
         xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
                            http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
                            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
 
-
-    <!-- Acquires the DSpace Utility Class with initialized Service Manager
+    <!-- Acquires the DSpace Utility Class with initialized Service Manager -->
     <bean id="dspace" class="org.dspace.utils.DSpace"/>
-      -->
+
+    <!-- Acquires reference to ConfigurationService -->
+    <bean id="dspace.configService" factory-bean="dspace" factory-method="getConfigurationService"/>
+
+    <!-- populate spring placeholders off dspace.cfg -->
+    <bean id="propertyConfigurer" class="org.dspace.app.util.DSpacePropertyPlaceholderConfigurer">
+        <property name="ignoreUnresolvablePlaceholders" value="true"/>
+        <property name="configurationService" ref="dspace.configService"/>
+    </bean>
+
+    <!-- DSpace DataONE Node for populating ping requests -->
+    <bean class="org.dataone.service.types.v1.Node">
+        <property name="replicate" value="false"/>
+        <property name="synchronize" value="false"/>
+        <property name="type">
+            <util:constant static-field="org.dataone.service.types.v1.NodeType.MN"/>
+        </property>
+        <property name="state">
+            <util:constant static-field="org.dataone.service.types.v1.NodeState.UP"/>
+        </property>
+        <property name="identifier">
+            <bean class="org.dataone.service.types.v1.NodeReference">
+                <property name="value" value="${dataone.node.identifier}"/>
+            </bean>
+        </property>
+        <property name="name" value="${dataone.node.name}"/>
+        <property name="description" value="${dataone.node.description}"/>
+        <property name="baseURL" value="${dataone.node.baseurl}"/>
+        <property name="ping">
+            <bean class="org.dataone.service.types.v1.Ping">
+                <property name="success" value="true"/>
+                <property name="lastSuccess">
+                    <bean class="java.util.Date"/>
+                </property>
+            </bean>
+        </property>
+        <property name="services">
+            <bean class="org.dataone.service.types.v1.Services">
+                <property name="serviceList">
+                    <util:list>
+                        <bean class="org.dataone.service.types.v1.Service">
+                            <property name="name" value="MNCore"/>
+                            <property name="version" value="v1"/>
+                            <property name="available" value="true"/>
+                        </bean>
+                        <bean class="org.dataone.service.types.v1.Service">
+                            <property name="name" value="MNRead"/>
+                            <property name="version" value="v1"/>
+                            <property name="available" value="true"/>
+                        </bean>
+
+                        <bean class="org.dataone.service.types.v1.Service">
+                            <property name="name" value="MNAuthorization"/>
+                            <property name="version" value="v1"/>
+                            <property name="available" value="false"/>
+                        </bean>
+                        <bean class="org.dataone.service.types.v1.Service">
+                            <property name="name" value="MNStorage"/>
+                            <property name="version" value="v1"/>
+                            <property name="available" value="false"/>
+                        </bean>
+                        <bean class="org.dataone.service.types.v1.Service">
+                            <property name="name" value="MNReplication"/>
+                            <property name="version" value="v1"/>
+                            <property name="available" value="false"/>
+                        </bean>
+                    </util:list>
+                </property>
+            </bean>
+        </property>
+        <property name="synchronization">
+            <bean class="org.dataone.service.types.v1.Synchronization">
+                <property name="schedule">
+                    <bean class="org.dataone.service.types.v1.Schedule">
+                        <property name="hour" value="${dataone.node.synchronization.schedule.hour:*}"/>
+                        <property name="mday" value="${dataone.node.synchronization.schedule.mday:*}"/>
+                        <property name="min" value="${dataone.node.synchronization.schedule.min:0/3}"/>
+                        <property name="mon" value="${dataone.node.synchronization.schedule.mon:*}"/>
+                        <property name="sec" value="${dataone.node.synchronization.schedule.sec:10}"/>
+                        <property name="wday" value="${dataone.node.synchronization.schedule.wday:?}"/>
+                        <property name="year" value="${dataone.node.synchronization.schedule.year:*}"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        <property name="subjectList">
+            <util:list>
+                <bean class="org.dataone.service.types.v1.Subject">
+                    <property name="value" value="${dataone.node.subject}"/>
+                </bean>
+            </util:list>
+        </property>
+
+        <property name="contactSubjectList">
+            <util:list>
+                <bean class="org.dataone.service.types.v1.Subject">
+                    <property name="value" value="${dataone.node.contact}"/>
+                </bean>
+            </util:list>
+        </property>
+
+    </bean>
+
+    <context:component-scan base-package="org.dataone.rest.api"/>
+    <context:annotation-config/>
+
     <!-- Acquires reference to EventService
     <bean id="dspace.eventService" factory-bean="dspace" factory-method="getEventService"/>
     -->

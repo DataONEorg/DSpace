@@ -13,7 +13,7 @@
     <!--webapp mergeWebXML="web.xml" /-->
 
     <services>
-        <rest defaultRestSubcontext="/v1"/>
+        <rest defaultRestSubcontext="/mn"/>
     </services>
 
     <api-classes>

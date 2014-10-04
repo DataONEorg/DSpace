@@ -57,10 +57,13 @@
     </listener>
 
     <listener>
-        <listener-class>
-            org.springframework.web.context.ContextLoaderListener
-        </listener-class>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
     </listener>
+
+    <listener>
+        <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>
+    </listener>
+
 
     <servlet>
         <servlet-name>jersey</servlet-name>
@@ -78,7 +81,7 @@
 
     <servlet-mapping>
         <servlet-name>jersey</servlet-name>
-        <url-pattern>/v1/*</url-pattern>
+        <url-pattern>/mn/*</url-pattern>
     </servlet-mapping>
 
     <mime-mapping>
@@ -93,7 +96,7 @@
 
     <!-- The main page for the site will be redirect.jsp servlet, which redirects -->
     <welcome-file-list>
-        <welcome-file>index.jsp</welcome-file>
+        <welcome-file>index.html</welcome-file>
     </welcome-file-list>
 
 </web-app>
