@@ -1,8 +1,6 @@
 package org.dspace.bitstore;
 
-import org.apache.commons.io.output.ProxyOutputStream;
 import org.apache.log4j.Logger;
-import org.dspace.content.BitstreamFormat;
 import org.dspace.core.Constants;
 import org.dspace.core.Context;
 import org.dspace.core.LogManager;
@@ -23,7 +21,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * Bitstream Storage Output Stream provides a means to create a new Bitstream by handling an
+ * Bitstream Storage Output Stream provides a means to create a new Bitstream by handing an
  * OutputStream to another part of the application. This is useful for when a bitstream
  * is generated during a conversion process such as an XSL transformation,
  *
@@ -48,6 +46,8 @@ public class BitstreamStorageOutputStream extends DigestOutputStream {
 
     boolean closed;
 
+    private Map attrs = new HashMap();
+
     /**
      * Constructs a new ProxyOutputStream.
      *
@@ -65,7 +65,11 @@ public class BitstreamStorageOutputStream extends DigestOutputStream {
         this.closed = true;
         // update DB
 
-        updateBitstream(bitstream, this.getAttributes());
+        attrs.put("size_bytes", getByteCount());
+        attrs.put("checksum", Utils.toHex(this.getMessageDigest().digest()));
+        attrs.put("checksum_algorithm", CSA);
+
+        updateBitstream(bitstream, this.attrs);
 
         bitstream.setColumn("deleted", false);
 
@@ -92,17 +96,10 @@ public class BitstreamStorageOutputStream extends DigestOutputStream {
     {
         return bitstream.getIntColumn("bitstream_id");
     }
-    public Map getAttributes() throws IOException {
 
-        if (!this.closed) {
-            throw new IOException("Attributes Not Available Until OutputStream is Closed");
-        }
-
-        Map attrs = new HashMap();
-        attrs.put("size_bytes", getByteCount());
-        attrs.put("checksum", Utils.toHex(this.getMessageDigest().digest()));
-        attrs.put("checksum_algorithm", CSA);
-        return attrs;
+    public void setAttribute(String name, Object value)
+    {
+        attrs.put(name, value);
     }
 
     //-----------------------------------------------------------------------

@@ -10,10 +10,12 @@ package org.dspace.versioning;
 import org.dspace.content.*;
 import org.dspace.core.Context;
 import org.dspace.eperson.EPerson;
+import org.dspace.storage.rdbms.DatabaseManager;
 import org.dspace.storage.rdbms.TableRow;
 import org.dspace.utils.DSpace;
 import org.dspace.workflow.WorkflowItem;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Date;
 
@@ -26,16 +28,10 @@ import java.util.Date;
  */
 public class VersionImpl implements Version {
 
-    private int versionId;
     private EPerson eperson;
     private int itemID=-1;
     private Bitstream bitstream;
-    private Date versionDate;
-    private int versionNumber;
-    private String summary;
-    private String versionLog;
-    private int versionHistoryID;
-    private String handle;
+    private Bitstream oreBitstream;
     private Context myContext;
     private TableRow myRow;
 
@@ -51,11 +47,6 @@ public class VersionImpl implements Version {
     public int getVersionId()
     {
         return myRow.getIntColumn(VersionDAO.VERSION_ID);
-    }
-
-    protected void setVersionId(int versionId)
-    {
-        this.versionId = versionId;
     }
 
     public EPerson getEperson(){
@@ -99,7 +90,7 @@ public class VersionImpl implements Version {
         try {
             if (bitstream == null)
             {
-                return Bitstream.find(myContext, myRow.getIntColumn(VersionDAO.BITSTREAM_ID));
+                bitstream = Bitstream.find(myContext, myRow.getIntColumn(VersionDAO.BITSTREAM_ID));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
@@ -115,28 +106,31 @@ public class VersionImpl implements Version {
 
             this.bitstream = Bitstream.find(myContext, bitstream_id);
             myRow.setColumn(VersionDAO.BITSTREAM_ID, bitstream_id);
+            DatabaseManager.update(myContext, myRow);
 
             // Fully delete previous bitstream
             if(old != null)
             {
-                BitstreamUtil.delete(this.myContext, old, true);
+                BitstreamUtil.delete(myContext, old, true);
             }
 
         } catch (SQLException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
     @Override
     public Bitstream getOREBitstream() {
         try {
-            if (bitstream == null)
+            if (oreBitstream == null)
             {
-                return Bitstream.find(myContext, myRow.getIntColumn(VersionDAO.ORE_BITSTREAM_ID));
+                oreBitstream = Bitstream.find(myContext, myRow.getIntColumn(VersionDAO.ORE_BITSTREAM_ID));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
-        return bitstream;
+        return oreBitstream;
     }
 
     @Override
@@ -145,16 +139,18 @@ public class VersionImpl implements Version {
 
             Bitstream old = getOREBitstream();
 
-            this.bitstream = Bitstream.find(myContext, bitstream_id);
+            this.oreBitstream  = Bitstream.find(myContext, bitstream_id);
             myRow.setColumn(VersionDAO.ORE_BITSTREAM_ID, bitstream_id);
-
+            DatabaseManager.update(myContext, myRow);
             // Fully delete previous bitstream
             if(old != null)
             {
-                BitstreamUtil.delete(this.myContext, old, true);
+                BitstreamUtil.delete(myContext, old, true);
             }
 
         } catch (SQLException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
@@ -177,7 +173,6 @@ public class VersionImpl implements Version {
     }
 
     public void setVersionDate(Date versionDate) {
-        this.versionDate = versionDate;
         myRow.setColumn(VersionDAO.VERSION_DATE, versionDate);
     }
 
@@ -186,7 +181,6 @@ public class VersionImpl implements Version {
     }
 
     public void setVersionNumber(int versionNumber) {
-        this.versionNumber = versionNumber;
         myRow.setColumn(VersionDAO.VERSION_NUMBER, versionNumber);
     }
 
@@ -195,7 +189,6 @@ public class VersionImpl implements Version {
     }
 
     public void setSummary(String summary) {
-        this.summary = summary;
         myRow.setColumn(VersionDAO.VERSION_SUMMARY, summary);
     }
     public String getVerisonLog() {
@@ -203,7 +196,6 @@ public class VersionImpl implements Version {
     }
 
     public void setVersionLog(String summary) {
-        this.versionLog = summary;
         myRow.setColumn(VersionDAO.VERSION_VERSIONlOG, summary);
     }
 
@@ -213,7 +205,6 @@ public class VersionImpl implements Version {
     }
 
     public void setVersionHistory(int versionHistoryID) {
-        this.versionHistoryID = versionHistoryID;
         myRow.setColumn(VersionDAO.HISTORY_ID, versionHistoryID);
     }
 
@@ -255,7 +246,6 @@ public class VersionImpl implements Version {
     }
 
     public void setHandle(String handle) {
-        this.handle = handle;
         myRow.setColumn(VersionDAO.VERSION_HANDLE, handle);
     }
 
@@ -426,7 +416,7 @@ public class VersionImpl implements Version {
         return isLatestVersion;
     }
     public Bitstream[] getBitstreams(Context context){
-        return VersionDAO.findAllBitstreams(context,versionId);
+        return VersionDAO.findAllBitstreams(context,this.getVersionId());
     }
 
 }

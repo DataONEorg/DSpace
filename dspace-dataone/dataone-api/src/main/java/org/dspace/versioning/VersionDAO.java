@@ -376,12 +376,12 @@ public class VersionDAO
 
         ArrayList<Bitstream> bitstreamsList = new ArrayList<Bitstream>();
         try {
-            TableRowIterator tri = DatabaseManager.queryTable(context,TABLE_NAME, "SELECT * FROM version2bitstream where version_id=" + verisonId);
+            TableRowIterator tri = DatabaseManager.queryTable(context,"version2bitstream", "SELECT * FROM version2bitstream where version_id=" + verisonId);
             if(tri.hasNext())
             {
                 TableRow tr = tri.next();
 
-                Bitstream fromCache = (Bitstream) context.fromCache(Bitstream.class, tr.getIntColumn("bitsream_id"));
+                Bitstream fromCache = (Bitstream) context.fromCache(Bitstream.class, tr.getIntColumn("bitstream_id"));
 
                 if (fromCache != null)
                 {

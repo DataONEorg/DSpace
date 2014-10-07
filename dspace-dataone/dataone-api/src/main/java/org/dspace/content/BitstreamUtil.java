@@ -1,5 +1,6 @@
 package org.dspace.content;
 
+import org.apache.log4j.Logger;
 import org.dspace.bitstore.ExtendedBitstreamStorageManager;
 import org.dspace.core.Context;
 import org.dspace.core.LogManager;
@@ -12,6 +13,7 @@ import org.dspace.versioning.VersionDAO;
 import org.dspace.versioning.VersionHistory;
 import org.dspace.versioning.VersioningService;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Date;
 
@@ -22,15 +24,18 @@ import java.util.Date;
  */
 public class BitstreamUtil {
 
+    /** log4j category */
+    private static Logger log = Logger.getLogger(BitstreamUtil.class);
+
     /**
      * Allow access to delete method on Bitstream from code outside the package.
      * @param bitstream
      * @throws SQLException
      */
-    public static void delete(Context context, Bitstream bitstream, boolean cleanup) throws SQLException {
+    public static void delete(Context context, Bitstream bitstream, boolean cleanup) throws SQLException, IOException {
         bitstream.delete();
         if(cleanup)
-            ExtendedBitstreamStorageManager.delete(context, bitstream.getID());
+            ExtendedBitstreamStorageManager.cleanup(context, bitstream.getID(), true, true);
     }
 
     /**
@@ -108,7 +113,7 @@ public class BitstreamUtil {
                 row = DatabaseManager.querySingleTable(c, tableName, query,b.getID() );
             }catch (Exception e)
             {
-
+                log.error(e.getMessage(),e);
             }
 
         }
@@ -119,13 +124,22 @@ public class BitstreamUtil {
                 row = DatabaseManager.querySingleTable(c, tableName, query,b.getID() );
             }catch (Exception e)
             {
-
+                log.error(e.getMessage(),e);
             }
 
         }
         else
         {
+            String query= "select versionitem.versionitem_id as versionitem_id from versionitem, Version2Bitstream where versionitem.versionitem_id=Version2Bitstream.version_id and Version2Bitstream.bitstream_id = ? order by versionitem.version_number DESC";
+            try{
+                row = DatabaseManager.querySingle(c, query,b.getID() );
+            }catch (Exception e)
+            {
+                log.error(e.getMessage(),e);
+            }
+
             //this is a content bitstream
+            /*
             try{
                 DSpaceObject dSpaceObject =  b.getParentObject();
                 Item item = (Item) dSpaceObject;
@@ -139,6 +153,7 @@ public class BitstreamUtil {
             {
 
             }
+            */
         }
         if(row!=null)
         {

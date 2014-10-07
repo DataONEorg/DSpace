@@ -139,6 +139,11 @@ public class IndexEventConsumer implements Consumer {
                     log.warn("got null detail on DELETE event, skipping it.");
                 }
                 else {
+                    if(Constants.BITSTREAM == st)
+                    {
+                        //construct handle for bitstream and set as detail
+                        detail = "ds:bitstream/" + event.getSubjectID();
+                    }
                     log.debug("consume() adding event to delete queue: " + event.toString());
                     handlesToDelete.add(detail);
                 }
@@ -169,11 +174,12 @@ public class IndexEventConsumer implements Consumer {
                  * decisions on indexing and/or removal
                  */
                 String hdl = iu.getHandle();
+
                 if(iu.getType() == Constants.BITSTREAM)
                 {
                     Boolean addBitstream = true;
                     DSpaceObject parentObject = iu.getParentObject();
-                    if(parentObject.getType()==Constants.ITEM)
+                    if(parentObject != null && parentObject.getType()==Constants.ITEM)
                     {
                         Item item = (Item) parentObject;
                         if(!item.isArchived())
@@ -193,6 +199,7 @@ public class IndexEventConsumer implements Consumer {
                             }
                         }
                     }
+
                     if(addBitstream){
                         hdl="ds:bitstream/"+iu.getID();
                     }

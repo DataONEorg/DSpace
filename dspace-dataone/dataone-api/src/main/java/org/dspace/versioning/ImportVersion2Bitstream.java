@@ -53,10 +53,45 @@ public class ImportVersion2Bitstream {
         boolean force = line.hasOption("f");
 
 
+
+
         Context context = null;
         try{
             context = new Context();
             context.turnOffAuthorisationSystem();
+
+            if(force){
+                for(Bitstream b : Bitstream.findAll(context))
+                {
+                    // is bitstream a content stream or an ORE
+
+                   Version version = BitstreamUtil.getVersion(context,b);
+
+                   if(version == null && b.getParentObject() == null)
+                   {
+                       System.out.println("deleting: " + b.getID() + " version is null, " + b.getFormat().getShortDescription());
+                       BitstreamUtil.delete(context, b, true);
+                   }
+                    else {
+
+                       if(version == null)
+                           System.out.println("keeping: " + b.getID() + " version is null, " + b.getFormat().getShortDescription() + ", but parent:" + b.getParentObject().getID());
+
+                       else if(b.getParentObject() == null)
+                           System.out.println("keeping: " + b.getID() + " version is " + version.getVersionId() + ", " + b.getFormat().getShortDescription() + ", but parent: null");
+                       else
+                           System.out.println("keeping: " + b.getID() + " version is " + version.getVersionId() + ", " + b.getFormat().getShortDescription() + ", but parent:" + b.getParentObject().getID());
+
+
+                   }
+
+                }
+
+                context.commit();
+
+            }
+
+
             ItemIterator items = Item.findAll(context);
             VersioningService versioningService = new DSpace().getSingletonService(VersioningService.class);
             Date date = new Date();

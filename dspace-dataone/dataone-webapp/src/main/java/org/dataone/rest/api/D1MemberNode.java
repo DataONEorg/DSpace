@@ -18,6 +18,7 @@ import org.dataone.service.types.v1_1.QueryEngineList;
 import org.dspace.app.util.ContextUtil;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.authorize.AuthorizeManager;
+import org.dspace.authorize.ResourcePolicy;
 import org.dspace.content.*;
 import org.dspace.core.ConfigurationManager;
 import org.dspace.core.Constants;
@@ -312,8 +313,8 @@ public class D1MemberNode {
      * Use Cases: UC01, UC06, UC16
      *
      * Rest URL:
-     * GET /object/{id}
-     *
+     * GET /object/nnnbhj{id}
+     *hghb bmnb, b,b,bmb
      * @param pid persistent identifier, must be resolve able in IdentifierService. (<a href="http://mule1.dataone.org/ArchitectureDocs-current/apis/Types.html#Types.Identifier">Types.Identifier</a>) – The identifier
      *            for the object to be retrieved. May be a PID or a SID. Transmitted as part of the URL path and must
      *            be escaped accordingly.
@@ -343,6 +344,11 @@ public class D1MemberNode {
             if(object != null && object instanceof Bitstream)
             {
                 Bitstream bitstream = (Bitstream)object;
+
+                if(BitstreamUtil.isDeleted(bitstream))
+                {
+                    throw new NotFound("1020", pid + " Not Found (Deleted)");
+                }
 
                 if(!AuthorizeManager.authorizeActionBoolean(context, bitstream, Constants.READ))
                 {
@@ -453,12 +459,12 @@ public class D1MemberNode {
             {
                 Bitstream bitstream = (Bitstream)object;
 
-                boolean isAuthorized = AuthorizeManager.authorizeActionBoolean(context, bitstream, Constants.READ);
+                //boolean isAuthorized = AuthorizeManager.authorizeActionBoolean(context, bitstream, Constants.READ);
 
-                if(!isAuthorized)
-                {
-                    throw new NotAuthorized("1040","Not Authorized to Access");
-                }
+                //if(!isAuthorized)
+                //{
+                //    throw new NotAuthorized("1040","Not Authorized to Access");
+                //}
 
                 // send it to output stream
                 String mimeType = bitstream.getFormat().getMIMEType();
@@ -468,6 +474,7 @@ public class D1MemberNode {
                 String name = bitstream.getName();
 
                 SystemMetadata  systemMetadata = new SystemMetadata();
+                systemMetadata.setArchived(BitstreamUtil.isDeleted(bitstream));
                 systemMetadata.setSize(BigInteger.valueOf(bitstream.getSize()));
 
                 Checksum checksum = new Checksum();
@@ -492,15 +499,20 @@ public class D1MemberNode {
                 systemMetadata.setRightsHolder(subject);
 
                 AccessPolicy ap = new AccessPolicy();
-                AccessRule ar = new AccessRule();
 
-                Subject pub =  new Subject();
-                pub.setValue("public");
+                for(ResourcePolicy rp : AuthorizeManager.getPoliciesActionFilter(context, bitstream, Constants.READ))
+                {
+                    if(rp != null && rp.getGroupID() == 0)
+                    {
+                        AccessRule ar = new AccessRule();
+                        Subject pub =  new Subject();
+                        pub.setValue("public");
+                        ar.setSubjectList(Collections.singletonList(pub));
+                        ar.setPermissionList(Collections.singletonList(Permission.READ));
+                        ap.setAllowList(Collections.singletonList(ar));
+                    }
+                }
 
-                ar.setSubjectList(Collections.singletonList(pub));
-                ar.setPermissionList(Collections.singletonList(Permission.READ));
-
-                ap.setAllowList(Collections.singletonList(ar));
                 systemMetadata.setAccessPolicy(ap);
 
                 Bitstream obsoletedByBitstream = BitstreamUtil.getObsoletedBy(context,bitstream);
@@ -816,6 +828,7 @@ public class D1MemberNode {
             SolrQuery solrQuery = new SolrQuery();
             solrQuery.setQuery("*:*");
             solrQuery.addFilterQuery("search.resourcetype:" + Constants.BITSTREAM);
+            solrQuery.addFilterQuery("deleted_b:" + false );
             solrQuery.addSort(new SolrQuery.SortClause("dateSysMetadataModified_dt",SolrQuery.ORDER.desc));
 
             if(identifier != null)
