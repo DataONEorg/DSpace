@@ -84,10 +84,25 @@ public class D1MemberNode {
     @GET
     @Path("/")
     @Produces({MediaType.APPLICATION_XML})
+    public Node doRootV1Ping() throws NotImplemented, ServiceFailure, InsufficientResources
+    {
+        return doPing();
+    }
+
+    /**
+     *
+     * @throws NotImplemented
+     * @throws ServiceFailure
+     * @throws InsufficientResources
+     */
+    @GET
+    @Path("/v1")
+    @Produces({MediaType.APPLICATION_XML})
     public Node doRootPing() throws NotImplemented, ServiceFailure, InsufficientResources
     {
         return doPing();
     }
+
     /**
      *
      * @throws NotImplemented
