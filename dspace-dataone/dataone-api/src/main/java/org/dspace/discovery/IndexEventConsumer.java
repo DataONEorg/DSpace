@@ -8,14 +8,13 @@
 package org.dspace.discovery;
 
 import org.apache.log4j.Logger;
-import org.dspace.content.Bundle;
-import org.dspace.content.DSpaceObject;
-import org.dspace.content.Item;
-import org.dspace.content.WorkspaceItem;
+import org.dspace.content.*;
 import org.dspace.core.Constants;
 import org.dspace.core.Context;
 import org.dspace.event.Consumer;
 import org.dspace.event.Event;
+import org.dspace.identifier.Identifier;
+import org.dspace.identifier.IdentifierService;
 import org.dspace.utils.DSpace;
 import org.dspace.workflow.WorkflowItem;
 import org.dspace.xmlworkflow.state.Workflow;
@@ -45,6 +44,8 @@ public class IndexEventConsumer implements Consumer {
     DSpace dspace = new DSpace();
 
     IndexingService indexer = dspace.getServiceManager().getServiceByName(IndexingService.class.getName(),IndexingService.class);
+
+    IdentifierService identifierService = dspace.getSingletonService(IdentifierService.class);
 
     public void initialize() throws Exception {
 
@@ -102,6 +103,12 @@ public class IndexEventConsumer implements Consumer {
 
         switch (et) {
             case Event.CREATE:
+                if(Constants.BITSTREAM==st)
+                {
+                    objectsToUpdate.add(subject);
+                    log.debug("consume() adding event to add queue: " + event.toString());
+                    break;
+                }
             case Event.MODIFY:
             case Event.MODIFY_METADATA:
                 if (subject == null)
@@ -221,19 +228,29 @@ public class IndexEventConsumer implements Consumer {
             }
 
             for (String hdl : handlesToDelete) {
+
                 try {
-                    indexer.unIndexContent(ctx, hdl, true);
-                    if (log.isDebugEnabled())
+
+                    // If object is still retrievable, and it is a Bitstream, and it has been marked deleted
+                    DSpaceObject dso = identifierService.resolve(ctx,hdl);
+                    if(dso != null && dso instanceof Bitstream && BitstreamUtil.isDeleted((Bitstream)dso))
                     {
-                        log.debug("UN-Indexed Item, handle=" + hdl);
+                        indexer.indexContent(ctx, dso, true);
+                        log.debug("found deleted dso, updating, handle=" + hdl);
+                        continue; // skip rest, we have completed the necessary work
                     }
+
                 }
-                catch (Exception e) {
-                    log.error("Failed while UN-indexing object: " + hdl, e);
+                catch (Exception e)
+                {
+                    log.error("Unexpected error retrieving bitstream to delete: " + hdl, e);
                 }
+
+                // if not bitstream, un-index the record
+                indexer.unIndexContent(ctx, hdl, true);
+                log.debug("un-indexed handle=" + hdl);
 
             }
-
         }
 
         // "free" the resources

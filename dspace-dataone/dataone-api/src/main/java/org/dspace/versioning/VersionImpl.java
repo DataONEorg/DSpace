@@ -8,8 +8,10 @@
 package org.dspace.versioning;
 
 import org.dspace.content.*;
+import org.dspace.core.Constants;
 import org.dspace.core.Context;
 import org.dspace.eperson.EPerson;
+import org.dspace.event.Event;
 import org.dspace.storage.rdbms.DatabaseManager;
 import org.dspace.storage.rdbms.TableRow;
 import org.dspace.utils.DSpace;
@@ -107,11 +109,12 @@ public class VersionImpl implements Version {
             this.bitstream = Bitstream.find(myContext, bitstream_id);
             myRow.setColumn(VersionDAO.BITSTREAM_ID, bitstream_id);
             DatabaseManager.update(myContext, myRow);
-
+            myContext.addEvent(new Event(Event.CREATE, Constants.BITSTREAM, bitstream_id, null));
             // Fully delete previous bitstream
             if(old != null)
             {
                 BitstreamUtil.delete(myContext, old, true);
+                myContext.addEvent(new Event(Event.DELETE, Constants.BITSTREAM, old.getID(), null));
             }
 
         } catch (SQLException e) {
@@ -142,10 +145,12 @@ public class VersionImpl implements Version {
             this.oreBitstream  = Bitstream.find(myContext, bitstream_id);
             myRow.setColumn(VersionDAO.ORE_BITSTREAM_ID, bitstream_id);
             DatabaseManager.update(myContext, myRow);
+            myContext.addEvent(new Event(Event.CREATE, Constants.BITSTREAM, bitstream_id, null));
             // Fully delete previous bitstream
             if(old != null)
             {
                 BitstreamUtil.delete(myContext, old, true);
+                myContext.addEvent(new Event(Event.DELETE, Constants.BITSTREAM, old.getID(), null));
             }
 
         } catch (SQLException e) {

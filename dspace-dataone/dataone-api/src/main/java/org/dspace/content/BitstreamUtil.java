@@ -47,6 +47,12 @@ public class BitstreamUtil {
         bitstream.delete();
     }
 
+    /**
+     * isDeleted should have been a public method on Bitstream, utility method to determine if Bitstream is deleted.
+     * @param bitstream
+     * @return
+     * @throws SQLException
+     */
     public static boolean isDeleted(Bitstream bitstream) throws SQLException {
         return bitstream.isDeleted();
     }
