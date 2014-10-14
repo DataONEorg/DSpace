@@ -47,6 +47,7 @@ import org.dspace.core.Context;
 import org.dspace.core.Email;
 import org.dspace.core.I18nUtil;
 import org.dspace.core.LogManager;
+import org.dspace.dataone.DataOneUtil;
 import org.dspace.discovery.configuration.DiscoveryConfiguration;
 import org.dspace.discovery.configuration.DiscoveryConfigurationParameters;
 import org.dspace.discovery.configuration.DiscoveryHitHighlightFieldConfiguration;
@@ -776,15 +777,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
         Date lastModifiedDate = BitstreamUtil.getLastModifiedDate(context, bitstream);
         String description = bitstream.getDescription();
         String checksum = bitstream.getChecksum();
-        String formatDescription = bitstream.getFormatDescription();
-        String userDescription = bitstream.getUserFormatDescription();
-        BitstreamFormat format = bitstream.getFormat();
-        String formatId = format.getMIMEType();
-
-        if(format.getShortDescription().equals(OREManifestWriter.ORE.NS))
-            formatId = OREManifestWriter.ORE.NS;
-        else if(format.getShortDescription().equals("http://www.loc.gov/METS/"))
-            formatId = "http://www.loc.gov/METS/";
+        String formatId = DataOneUtil.getFormat(bitstream);
 
         String name = bitstream.getName();
         List<String> toIgnoreMetadataFields = SearchUtils.getIgnoredMetadataFields(bitstream.getType());

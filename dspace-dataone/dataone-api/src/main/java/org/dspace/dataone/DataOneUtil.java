@@ -1,0 +1,25 @@
+package org.dspace.dataone;
+
+import org.dspace.content.Bitstream;
+import org.dspace.content.BitstreamFormat;
+import org.dspace.content.OREManifestWriter;
+
+/**
+ * Created by mdiggory on 10/13/14.
+ */
+public class DataOneUtil {
+
+    public static String getFormat(Bitstream bitstream)
+    {
+        BitstreamFormat format = bitstream.getFormat();
+
+        String formatId = format.getMIMEType();
+
+        if(format.getShortDescription().equals(OREManifestWriter.ORE.NS))
+            formatId = OREManifestWriter.ORE.NS;
+        else if(format.getShortDescription().equals("http://www.loc.gov/METS/"))
+            formatId = "http://www.loc.gov/METS/";
+
+        return formatId;
+    }
+}

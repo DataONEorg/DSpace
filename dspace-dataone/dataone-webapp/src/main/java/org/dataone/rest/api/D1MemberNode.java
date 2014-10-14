@@ -23,6 +23,7 @@ import org.dspace.content.*;
 import org.dspace.core.ConfigurationManager;
 import org.dspace.core.Constants;
 import org.dspace.core.Email;
+import org.dspace.dataone.DataOneUtil;
 import org.dspace.dataone.statistics.DataOneSolrLogger;
 import org.dspace.identifier.IdentifierNotFoundException;
 import org.dspace.identifier.IdentifierNotResolvableException;
@@ -551,7 +552,7 @@ public class D1MemberNode {
                 </allow>
                    */
                 ObjectFormatIdentifier objectFormatIdentifier = new ObjectFormatIdentifier();
-                objectFormatIdentifier.setValue(bitstream.getFormat().getMIMEType());
+                objectFormatIdentifier.setValue(DataOneUtil.getFormat(bitstream));
                 systemMetadata.setFormatId(objectFormatIdentifier);
 
                 systemMetadata.setDateSysMetadataModified(BitstreamUtil.getLastModifiedDate(context, bitstream));
