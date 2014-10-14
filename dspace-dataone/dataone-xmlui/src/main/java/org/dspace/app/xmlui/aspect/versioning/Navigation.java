@@ -165,7 +165,7 @@ public class Navigation extends AbstractDSpaceTransformer implements CacheablePr
             {
                 boolean headAdded=true;
                 content.setHead(T_context_head);
-                content.addItem().addXref(contextPath+"/submit?itemID="+item.getID()+"&version=create", T_context_create_version);
+                content.addItem().addXref(contextPath+"/handle/"+item.getCollections()[0].getHandle()+"/submit?itemID="+item.getID()+"&version=create", T_context_create_version);
 
                 if(hasVersionHistory(item)&&AuthorizeManager.isAdmin(context))
                 {
