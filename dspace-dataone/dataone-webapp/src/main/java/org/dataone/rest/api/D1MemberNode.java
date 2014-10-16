@@ -12,7 +12,6 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.dataone.service.exceptions.*;
-import org.dataone.service.mn.tier1.v1.MNCore;
 import org.dataone.service.types.v1.*;
 import org.dataone.service.types.v1_1.QueryEngineDescription;
 import org.dataone.service.types.v1_1.QueryEngineList;
@@ -24,6 +23,7 @@ import org.dspace.content.*;
 import org.dspace.core.ConfigurationManager;
 import org.dspace.core.Constants;
 import org.dspace.core.Email;
+import org.dspace.core.I18nUtil;
 import org.dspace.dataone.DataOneUtil;
 import org.dspace.dataone.statistics.DataOneSolrLogger;
 import org.dspace.identifier.IdentifierNotFoundException;
@@ -36,7 +36,6 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.stereotype.Component;
 
 import javax.mail.MessagingException;
@@ -49,7 +48,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.math.BigInteger;
-import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -998,27 +996,38 @@ public class D1MemberNode {
     @Path("/v1/error")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces({MediaType.APPLICATION_XML})
-    public boolean synchronizationFailed(
-            @FormDataParam("message") InputStream uploadedInputStream) throws InvalidToken, NotAuthorized, NotImplemented, ServiceFailure {
+    public Response synchronizationFailed(@Context HttpServletRequest request,
+                                          @FormDataParam("message") InputStream message) throws InvalidToken, NotAuthorized, NotImplemented, ServiceFailure {
 
         try {
 
             StringWriter writer = new StringWriter();
-            IOUtils.copy(uploadedInputStream,writer);
+
+            IOUtils.copy(message,writer);
+
             log.error(writer.getBuffer().toString());
 
-            Email email = Email.getEmail("dataone_error");
-            email.addRecipient(ConfigurationManager.getProperty("alert.recipient"));
-            email.addArgument(format.format(new Date()));
-            email.addArgument(writer.getBuffer().toString());
-            email.send();
+            try
+            {
+                if(ConfigurationManager.getProperty("dataone", "error.recipient") != null) {
+                    org.dspace.core.Context context = ContextUtil.obtainContext(request);
+                    Email email = Email.getEmail(I18nUtil.getEmailFilename(context.getCurrentLocale(), "dataone_error"));
+                    email.addRecipient(ConfigurationManager.getProperty("dataone", "error.recipient"));
+                    email.addArgument(format.format(new Date()));
+                    email.addArgument(writer.getBuffer().toString());
+                    email.send();
+                }
+            } catch (MessagingException e) {
+                log.error(e.getMessage(), e);
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
 
-            return true;
+            return Response.ok().build();
 
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new ServiceFailure("2161", e.getMessage());
-        } catch (MessagingException e) {
             log.error(e.getMessage(), e);
             throw new ServiceFailure("2161", e.getMessage());
         }
