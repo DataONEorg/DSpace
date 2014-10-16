@@ -1,6 +1,7 @@
 package org.dataone.rest.api;
 
 import com.sun.jersey.multipart.FormDataParam;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -46,6 +47,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.math.BigInteger;
 import java.net.URLDecoder;
 import java.sql.Connection;
@@ -471,9 +473,8 @@ public class D1MemberNode {
             IdentifierService identifierService = dspace.getSingletonService(IdentifierService.class);
             DSpaceObject object = identifierService.resolve(context,pid);
 
-            if(object != null && object instanceof Bitstream)
-            {
-                Bitstream bitstream = (Bitstream)object;
+            if(object != null && object instanceof Bitstream) {
+                Bitstream bitstream = (Bitstream) object;
 
                 //boolean isAuthorized = AuthorizeManager.authorizeActionBoolean(context, bitstream, Constants.READ);
 
@@ -489,8 +490,8 @@ public class D1MemberNode {
 
                 String name = bitstream.getName();
 
-                SystemMetadata  systemMetadata = new SystemMetadata();
-                systemMetadata.setArchived(BitstreamUtil.isDeleted(bitstream));
+                SystemMetadata systemMetadata = new SystemMetadata();
+
                 systemMetadata.setSize(BigInteger.valueOf(bitstream.getSize()));
 
                 Checksum checksum = new Checksum();
@@ -498,13 +499,19 @@ public class D1MemberNode {
                 checksum.setAlgorithm(bitstream.getChecksumAlgorithm());
                 systemMetadata.setChecksum(checksum);
 
-                // TODO Verify State of Bitstream in Item (Bitstreams that are part of
-                // Versions or withdrawn items shouldbe considered archived)
                 DSpaceObject parent = bitstream.getParentObject();
-                if(parent == null  || (parent instanceof Item && ((Item) parent).isWithdrawn()))
+
+                if (parent != null && (parent instanceof Item && ((Item) parent).isWithdrawn()))
+                {
+                    // withdrawn item bitstreams are "archived"
                     systemMetadata.setArchived(true);
+                }
                 else
-                    systemMetadata.setArchived(false);
+                {
+                    // all other cases (deleted, version mets and ore, so-on) depend on the actual state of the bitstream
+                    systemMetadata.setArchived(BitstreamUtil.isDeleted(bitstream));
+
+                }
 
                 Identifier identifier = new Identifier();
                 identifier.setValue(pid);
@@ -535,14 +542,14 @@ public class D1MemberNode {
                 if(obsoletedByBitstream!=null)
                 {
                     Identifier obsoletedByIdentifier = new Identifier();
-                    obsoletedByIdentifier.setValue("ds:bitstream/"+obsoletedByBitstream.getID());
+                    obsoletedByIdentifier.setValue(DataOneUtil.getPid(obsoletedByBitstream));
                     systemMetadata.setObsoletedBy(obsoletedByIdentifier);
                 }
 
                 Bitstream obsoleteBitstream = BitstreamUtil.getObsoletes(context,bitstream);
                 if(obsoleteBitstream!=null){
                     Identifier obsoleteIdentifier = new Identifier();
-                    obsoleteIdentifier.setValue("ds:bitstream/"+obsoleteBitstream.getID());
+                    obsoleteIdentifier.setValue(DataOneUtil.getPid(obsoleteBitstream));
                     systemMetadata.setObsoletes(obsoleteIdentifier);
                 }
                  /*
@@ -992,16 +999,18 @@ public class D1MemberNode {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces({MediaType.APPLICATION_XML})
     public boolean synchronizationFailed(
-            @FormDataParam("message") String message) throws InvalidToken, NotAuthorized, NotImplemented, ServiceFailure {
+            @FormDataParam("message") InputStream uploadedInputStream) throws InvalidToken, NotAuthorized, NotImplemented, ServiceFailure {
 
         try {
 
-            log.error(message);
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(uploadedInputStream,writer);
+            log.error(writer.getBuffer().toString());
 
             Email email = Email.getEmail("dataone_error");
             email.addRecipient(ConfigurationManager.getProperty("alert.recipient"));
             email.addArgument(format.format(new Date()));
-            email.addArgument(message);
+            email.addArgument(writer.getBuffer().toString());
             email.send();
 
             return true;

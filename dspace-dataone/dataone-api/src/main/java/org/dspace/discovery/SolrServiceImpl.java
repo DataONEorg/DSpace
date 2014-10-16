@@ -771,7 +771,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
             throws SQLException, IOException {
         // Create Document
         SolrInputDocument doc = buildDocument(Constants.BITSTREAM, bitstream.getID(),
-                "ds:bitstream/"+bitstream.getID(), null);
+                DataOneUtil.getPid(bitstream), null);
 
         // and populate it
         Date lastModifiedDate = BitstreamUtil.getLastModifiedDate(context, bitstream);
@@ -807,7 +807,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
         if(name!=null)
             addContainerMetadataField(doc, highlightedMetadataFields, toIgnoreMetadataFields, "name", name);
 
-        doc.addField("identifier_s", "ds:bitstream/"+bitstream.getID());
+        doc.addField("identifier_s", DataOneUtil.getPid(bitstream));
 
         doc.addField("size_l", bitstream.getSize());
 
@@ -1620,10 +1620,6 @@ public class SolrServiceImpl implements SearchService, IndexingService {
             {
                 discoveryQuery.addFilterQueries("handle:" + dso.getHandle());
             }
-//            else if (dso instanceof Bitstream)
-//            {
-//                discoveryQuery.addFilterQueries("handle:" + "ds:bitstream"+dso.getID());
-//            }
         }
         return search(context, discoveryQuery, includeUnDiscoverable);
 

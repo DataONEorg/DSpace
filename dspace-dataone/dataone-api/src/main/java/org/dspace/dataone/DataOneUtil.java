@@ -22,4 +22,17 @@ public class DataOneUtil {
 
         return formatId;
     }
+
+    public static String getPid(Bitstream bitstream)
+    {
+        return getPid(Integer.toString(bitstream.getID()));
+    }
+
+    public static String getPid(String id)
+    {
+        return "ds:bitstream/"+id;
+    }
+
+
+
 }
