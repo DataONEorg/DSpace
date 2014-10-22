@@ -1,3 +1,12 @@
+<!--
+
+    The contents of this file are subject to the license and copyright
+    detailed in the LICENSE and NOTICE files at the root of the source
+    tree and available online at
+
+    http://www.dspace.org/license/
+
+-->
 <binding  name="binding" package="org.dataone.service" trim-whitespace="true">
     <include path="binding_v1.xml" precompiled="false"/>
     <include path="binding_v1_1.xml" precompiled="false"/>
