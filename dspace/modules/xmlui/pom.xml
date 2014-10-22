@@ -96,20 +96,20 @@
    <dependencies>
 
        <dependency>
-           <groupId>org.dspace</groupId>
+           <groupId>org.dspace.dataone</groupId>
            <artifactId>dataone-api</artifactId>
            <version>${dataone.version}</version>
        </dependency>
 
        <dependency>
-           <groupId>org.dspace</groupId>
+           <groupId>org.dspace.dataone</groupId>
            <artifactId>dataone-xmlui</artifactId>
            <version>${dataone.version}</version>
            <classifier>classes</classifier>
        </dependency>
 
        <dependency>
-           <groupId>org.dspace</groupId>
+           <groupId>org.dspace.dataone</groupId>
            <artifactId>dataone-xmlui</artifactId>
            <version>${dataone.version}</version>
            <type>war</type>

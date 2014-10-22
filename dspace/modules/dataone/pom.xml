@@ -49,7 +49,7 @@
                            next. the order is unpredictable.
                         -->
                         <overlay>
-                            <groupId>org.dspace</groupId>
+                            <groupId>org.dspace.dataone</groupId>
                             <artifactId>dataone-webapp</artifactId>
                         </overlay>
                     </overlays>
@@ -90,14 +90,14 @@
         </dependency>
 
         <dependency>
-            <groupId>org.dspace</groupId>
+            <groupId>org.dspace.dataone</groupId>
             <artifactId>dataone-webapp</artifactId>
             <version>${dataone.version}</version>
             <type>war</type>
         </dependency>
 
         <dependency>
-            <groupId>org.dspace</groupId>
+            <groupId>org.dspace.dataone</groupId>
             <artifactId>dataone-webapp</artifactId>
             <version>${dataone.version}</version>
             <type>jar</type>
