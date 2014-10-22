@@ -89,6 +89,8 @@ public class OREManifestWriter {
         Resource scimeta = model.createResource("https://cn.dataone.org/cn/v1/resolve/" + this.encode(DataOneUtil.getPid(mets)))
                 .addProperty(DCTerms.identifier, DataOneUtil.getPid(mets));
 
+        aggregation.addProperty(ORE.aggregates, scimeta);
+
         for(Bundle bundle : newItem.getBundles())
         {
             for(Bitstream bits : bundle.getBitstreams())
