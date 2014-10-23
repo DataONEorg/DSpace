@@ -87,10 +87,12 @@ public class VersioningServiceImpl implements VersioningService{
     }
 
     public void removeVersion(Context c, Item item) {
-        Version version = versionDAO.findByItem(c, item);
-        if(version!=null){
-            removeVersion(c, version);
-        }
+
+        //comment it out because we want to keep the version history so we can restore the deleted item later
+//        Version version = versionDAO.findByItem(c, item);
+//        if(version!=null){
+//            removeVersion(c, version);
+//        }
     }
 
     protected void removeVersion(Context c, Version version) {
