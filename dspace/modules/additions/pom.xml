@@ -98,7 +98,7 @@
       </dependency>
 
        <dependency>
-           <groupId>org.dspace.dataone</groupId>
+           <groupId>org.dataone.dspace</groupId>
            <artifactId>dataone-api</artifactId>
            <version>${dataone.version}</version>
        </dependency>
