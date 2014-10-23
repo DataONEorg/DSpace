@@ -3,7 +3,7 @@
     <groupId>org.dataone.dspace</groupId>
     <artifactId>dspace-dataone</artifactId>
     <packaging>pom</packaging>
-    <version>4.2.0</version>
+    <version>4.2.1-SNAPSHOT</version>
     <name>DSpace Data One Member Node : Parent Module</name>
     <url>http://demo.dspace.org</url>
 

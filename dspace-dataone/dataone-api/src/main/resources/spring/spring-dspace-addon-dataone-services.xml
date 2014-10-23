@@ -22,14 +22,15 @@
 
     <context:annotation-config /> <!-- allows us to use spring annotations in beans -->
 
-    <!-- Add Identifier Provider To support UUID Idnetifiers -->
+    <!-- Add Identifier Provider To support UUID Idnetifiers
+    DISABLED IN THIS RELEASE, ADDITIONAL WORK IS NEEDED TO STORE UUID FOR BITSTREAM
     <bean id="org.dspace.identifier.UniversallyUniqueIdentifierProvider"
           class="org.dspace.identifier.UniversallyUniqueIdentifierProvider"
           scope="singleton">
         <property name="configurationService"
                   ref="org.dspace.services.ConfigurationService" />
     </bean>
-
+    -->
     <!-- Add Identifier Provider To support ds:[type]/[id] Idnetifiers -->
     <bean id="org.dspace.identifier.InternalIdentifierProvider"
           class="org.dspace.identifier.InternalIdentifierProvider"
