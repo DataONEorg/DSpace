@@ -7,13 +7,9 @@
  */
 package org.dspace.content.packager;
 
-import edu.harvard.hul.ois.mets.Mets;
-import edu.harvard.hul.ois.mets.helper.MetsException;
-import edu.harvard.hul.ois.mets.helper.MetsValidator;
-import edu.harvard.hul.ois.mets.helper.MetsWriter;
 import org.apache.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
-import org.dspace.bitstore.ExtendedBitstreamStorageManager;
+import org.dspace.storage.bitstore.BitstreamStorageManager;
 import org.dspace.content.*;
 import org.dspace.content.crosswalk.CrosswalkException;
 import org.dspace.content.crosswalk.MetadataValidationException;
@@ -22,7 +18,6 @@ import org.dspace.core.Context;
 import org.dspace.core.LogManager;
 import org.dspace.handle.HandleManager;
 import org.dspace.storage.rdbms.TableRow;
-import org.dspace.utils.DSpace;
 import org.jdom.Element;
 
 import java.io.*;
@@ -547,7 +542,7 @@ public class InternalDSpaceAIPIngester extends AbstractInternalMETSIngester {
         {
             try
             {
-                TableRow row = ExtendedBitstreamStorageManager.dereferenceAbsoluteURI(context, new URI(path));
+                TableRow row = BitstreamStorageManager.dereferenceAbsoluteURI(context, new URI(path));
                 Bitstream result = Bitstream.find(context,row.getIntColumn("bitstream_id"));
 
                 if (result == null)

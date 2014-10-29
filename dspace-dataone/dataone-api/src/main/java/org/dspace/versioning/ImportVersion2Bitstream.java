@@ -245,14 +245,16 @@ public class ImportVersion2Bitstream {
             context.complete();
         }catch (Exception e)
         {
+
+            log.error(e.getMessage(),e);
+            e.printStackTrace();
+
             if(context!=null)
             {
                 context.restoreAuthSystemState();
                 context.abort();
             }
-           System.out.println(e.getMessage());
-            System.out.println(e.fillInStackTrace());
-            log.error(e.getMessage(),e);
+
         }
 
     }

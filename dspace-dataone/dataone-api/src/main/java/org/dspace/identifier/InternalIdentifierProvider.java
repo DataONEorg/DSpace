@@ -9,6 +9,7 @@ package org.dspace.identifier;
 
 import org.apache.log4j.Logger;
 import org.dspace.content.Bitstream;
+import org.dspace.content.BitstreamUtil;
 import org.dspace.content.DSpaceObject;
 import org.dspace.content.Item;
 import org.dspace.core.Context;
@@ -25,9 +26,9 @@ import org.springframework.stereotype.Component;
 public class InternalIdentifierProvider extends IdentifierProvider {
 
     /** log4j category */
-    private static Logger log = Logger.getLogger(UniversallyUniqueIdentifierProvider.class);
+    private static Logger log = Logger.getLogger(InternalIdentifierProvider.class);
 
-    protected String[] supportedPrefixes = new String[]{"info:ds", "ds"};
+    protected String[] supportedPrefixes = new String[]{"info:uuid", "uuid:"};
 
     @Override
     public boolean supports(Class<? extends Identifier> identifier) {
@@ -53,22 +54,11 @@ public class InternalIdentifierProvider extends IdentifierProvider {
      */
     public DSpaceObject resolve(Context context, String identifier, String... attributes) throws IdentifierNotFoundException, IdentifierNotResolvableException {
 
-        // https://host/dataone/object/ds:bitstream/1234
-        if(identifier.startsWith("ds:bitstream/"))
-        {
-            try {
-                return Bitstream.find(context, Integer.parseInt(identifier.replace("ds:bitstream/","")));
-            } catch (Exception e) {
-                log.error(e.getMessage(),e);
-            }
-        }
-        else if(identifier.startsWith("ds:item/"))
-        {
-            try {
-                return Item.find(context, Integer.parseInt(identifier.replace("ds:item/", "")));
-            } catch (Exception e) {
-                log.error(e.getMessage(),e);
-            }
+        // This is partial implementation only supporting Bitstreams
+        try {
+            return BitstreamUtil.findByUuid(context, identifier);
+        } catch (Exception e) {
+            log.error(e.getMessage(),e);
         }
 
         return null;
@@ -79,7 +69,12 @@ public class InternalIdentifierProvider extends IdentifierProvider {
 
         if(object instanceof Bitstream)
         {
-            return "ds:bitstream/" + object.getID();
+            try {
+                return BitstreamUtil.getUuid(context, (Bitstream)object);
+            } catch (Exception e) {
+                if(log.isDebugEnabled())
+                    log.debug(e.getMessage(),e);
+            }
         }
 
         return null;

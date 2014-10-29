@@ -14,8 +14,8 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.vocabulary.DC;
 import com.hp.hpl.jena.vocabulary.DCTerms;
 import com.hp.hpl.jena.vocabulary.RDF;
-import org.dspace.bitstore.BitstreamStorageOutputStream;
-import org.dspace.bitstore.ExtendedBitstreamStorageManager;
+import org.dspace.storage.bitstore.BitstreamStorageOutputStream;
+import org.dspace.storage.bitstore.BitstreamStorageManager;
 import org.dspace.core.ConfigurationManager;
 import org.dspace.core.Context;
 import org.dspace.dataone.DataOneUtil;
@@ -60,11 +60,11 @@ public class OREManifestWriter {
         model.setNsPrefix("dc",DC.NS);
         model.setNsPrefix("dcterms",DCTerms.NS);
 
-        BitstreamStorageOutputStream bos = ExtendedBitstreamStorageManager.store(c, BitstreamFormat.findByShortDescription(c, ORE.NS));
+        BitstreamStorageOutputStream bos = BitstreamStorageManager.store(c, BitstreamFormat.findByShortDescription(c, ORE.NS));
 
         int id = bos.getBitstreamID();
 
-        String identifier = DataOneUtil.getPid(String.valueOf(id));
+        String identifier = bos.getBitstreamUuid();
         String identifierEncoded = this.encode(identifier);
 
         bos.setAttribute("name","ore.rdf");
@@ -86,8 +86,8 @@ public class OREManifestWriter {
 
         Bitstream mets = version.getAIPBitstream();
 
-        Resource scimeta = model.createResource("https://cn.dataone.org/cn/v1/resolve/" + this.encode(DataOneUtil.getPid(mets)))
-                .addProperty(DCTerms.identifier, DataOneUtil.getPid(mets));
+        Resource scimeta = model.createResource("https://cn.dataone.org/cn/v1/resolve/" + this.encode(DataOneUtil.getPid(c,mets)))
+                .addProperty(DCTerms.identifier, DataOneUtil.getPid(c,mets));
 
         aggregation.addProperty(ORE.aggregates, scimeta);
 
@@ -95,7 +95,7 @@ public class OREManifestWriter {
         {
             for(Bitstream bits : bundle.getBitstreams())
             {
-                Resource scidata = model.createResource("https://cn.dataone.org/cn/v1/resolve/" + this.encode(DataOneUtil.getPid(bits)));
+                Resource scidata = model.createResource("https://cn.dataone.org/cn/v1/resolve/" + this.encode(DataOneUtil.getPid(c,bits)));
 
                 if(bits.getDescription() != null)
                 {
@@ -107,7 +107,7 @@ public class OREManifestWriter {
                     scidata.addProperty(DCTerms.title,bits.getName());
                 }
 
-                scidata.addProperty(DCTerms.identifier, DataOneUtil.getPid(bits));
+                scidata.addProperty(DCTerms.identifier, DataOneUtil.getPid(c,bits));
                 scidata.addProperty(CITO.isDocumentedBy, scimeta);
 
                 scimeta.addProperty(CITO.documents, scidata);

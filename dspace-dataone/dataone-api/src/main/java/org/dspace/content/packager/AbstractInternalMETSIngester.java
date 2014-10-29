@@ -23,7 +23,7 @@ import java.util.zip.ZipFile;
 
 import org.apache.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
-import org.dspace.bitstore.ExtendedBitstreamStorageManager;
+import org.dspace.storage.bitstore.BitstreamStorageManager;
 import org.dspace.content.Bitstream;
 import org.dspace.content.BitstreamFormat;
 import org.dspace.content.Bundle;
@@ -1467,7 +1467,7 @@ public abstract class AbstractInternalMETSIngester extends AbstractPackageIngest
                 if(params.getBooleanProperty("internal", false)){
 
                     URI uri = new URI(path);
-                    TableRow row = ExtendedBitstreamStorageManager.dereferenceAbsoluteURI(context, uri);
+                    TableRow row = BitstreamStorageManager.dereferenceAbsoluteURI(context, uri);
                     Bitstream bitstream = Bitstream.find(context,row.getIntColumn("bitstream_id"));
                     return bitstream.retrieve();
 

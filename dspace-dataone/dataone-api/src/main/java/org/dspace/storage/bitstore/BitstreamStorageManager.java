@@ -16,6 +16,8 @@ import edu.sdsc.grid.io.srb.SRBFile;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 import org.apache.log4j.Logger;
 import org.dspace.checker.BitstreamInfoDAO;
+import org.dspace.content.Bitstream;
+import org.dspace.content.BitstreamFormat;
 import org.dspace.core.ConfigurationManager;
 import org.dspace.core.Context;
 import org.dspace.core.Utils;
@@ -25,6 +27,9 @@ import org.dspace.storage.rdbms.TableRow;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -32,6 +37,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * <P>
@@ -262,6 +268,7 @@ public class BitstreamStorageManager
             bitstream = DatabaseManager.row("Bitstream");
             bitstream.setColumn("deleted", true);
             bitstream.setColumn("internal_id", id);
+            bitstream.setColumn("uuid", UUID.randomUUID().toString());
 
             /*
              * Set the store number of the new bitstream If you want to use some
@@ -340,6 +347,100 @@ public class BitstreamStorageManager
         return bitstreamId;
     }
 
+    /**
+     *
+     * @param context
+     * @return
+     * @throws SQLException
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    public static BitstreamStorageOutputStream store(Context context)
+            throws SQLException, IOException, NoSuchAlgorithmException {
+            return store(context, (BitstreamFormat) null);
+    }
+
+    /**
+     * Allow creation of new Bitstream with known BitstreamFormat. Can be leveraged downstream by
+     * Assetstore to determine any needs for storage policies.
+     *
+     * @param context
+     * @param format
+     * @return
+     * @throws SQLException
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    public static BitstreamStorageOutputStream store(Context context, BitstreamFormat format)
+            throws SQLException, IOException, NoSuchAlgorithmException {
+        // Create internal ID
+        String id = Utils.generateKey();
+
+        // Create a deleted bitstream row, using a separate DB connection
+        TableRow bitstream;
+        Context tempContext = null;
+
+        try
+        {
+            tempContext = new Context();
+            bitstream = DatabaseManager.create(tempContext, "Bitstream");
+            bitstream.setColumn("deleted", true);
+            bitstream.setColumn("internal_id", id);
+            bitstream.setColumn("uuid", UUID.randomUUID().toString());
+
+            if(format != null)
+            {
+                bitstream.setColumn("bitstream_format_id", format.getID());
+            }
+            else
+            {
+                bitstream.setColumn("bitstream_format_id", BitstreamFormat.findUnknown(context).getID());
+                bitstream.setColumnNull("user_format_description");
+            }
+
+            /*
+             * Set the store number of the new bitstream If you want to use some
+             * other method of working out where to put a new bitstream, here's
+             * where it should go
+             */
+            bitstream.setColumn("store_number", incoming);
+            DatabaseManager.update(tempContext, bitstream);
+            tempContext.complete();
+
+            bitstream = DatabaseManager.find(context, "bitstream", bitstream.getIntColumn("bitstream_id"));
+        }
+        catch (SQLException sqle)
+        {
+            if (tempContext != null)
+            {
+                tempContext.abort();
+            }
+
+            throw sqle;
+        }
+
+
+        // Where on the file system will this new bitstream go?
+        GeneralFile file = getFile(bitstream);
+
+        // Make the parent dirs if necessary
+        GeneralFile parent = file.getParentFile();
+
+        if (!parent.exists())
+        {
+            parent.mkdirs();
+        }
+
+        //Create the corresponding file and open it
+        file.createNewFile();
+
+        GeneralFileOutputStream fos = FileFactory.newFileOutputStream(file);
+        //create the OutputStream that will complete the Database changes once writing is complete.
+        return new BitstreamStorageOutputStream(
+                context,
+                bitstream,
+                fos);
+    }
 	/**
 	 * Register a bitstream already in storage.
 	 *
@@ -554,6 +655,79 @@ public class BitstreamStorageManager
                         id);
     }
 
+    public static void cleanup(Context context, int id, boolean deleteDbRecords, boolean verbose) throws SQLException, IOException
+    {
+            TableRow bitstream = DatabaseManager.find(context, "bitstream", id);
+
+            int bid = bitstream.getIntColumn("bitstream_id");
+
+            GeneralFile file = getFile(bitstream);
+
+            BitstreamInfoDAO bitstreamInfoDAO = new BitstreamInfoDAO();
+
+            // This is a small chance that this is a file which is
+            // being stored -- get it next time.
+            if (isRecent(file))
+            {
+                log.debug("file is recent");
+                return;
+            }
+
+            if (deleteDbRecords)
+            {
+                log.debug("deleting db record");
+                if (verbose)
+                {
+                    System.out.println(" - Deleting bitstream information (ID: " + bid + ")");
+                }
+                bitstreamInfoDAO.deleteBitstreamInfoWithHistory(bid);
+                if (verbose)
+                {
+                    System.out.println(" - Deleting bitstream record from database (ID: " + bid + ")");
+                }
+                DatabaseManager.delete(context, "Bitstream", bid);
+            }
+
+            if (isRegisteredBitstream(bitstream.getStringColumn("internal_id"))) {
+                return;			// do not delete registered bitstreams
+            }
+
+            // Since versioning allows for multiple bitstream files,
+            // check if the internal identifier isn't used in another bitstream before deleting file
+            TableRow duplicateBitRow = DatabaseManager.querySingleTable(context, "Bitstream",
+                    "SELECT * FROM Bitstream WHERE internal_id = ? AND bitstream_id <> ?", bitstream.getStringColumn("internal_id"), bid);
+            if(duplicateBitRow == null)
+            {
+                boolean success = file.delete();
+
+                String message = ("Deleted bitstream " + bid + " (file "
+                        + file.getAbsolutePath() + ") with result "
+                        + success);
+                if (log.isDebugEnabled())
+                {
+                    log.debug(message);
+                }
+                if (verbose)
+                {
+                    System.out.println(message);
+                }
+
+                // if the file was deleted then
+                // try deleting the parents
+                // Otherwise the cleanup script is set to
+                // leave the db records then the file
+                // and directories have already been deleted
+                // if this is turned off then it still looks like the
+                // file exists
+                if( success )
+                {
+                    deleteParents(file);
+                }
+            }
+
+            System.out.print("Transaction will still need to be commited");
+        }
+
     /**
      * Clean up the bitstream storage area. This method deletes any bitstreams
      * which are more than 1 hour old and marked deleted. The deletions cannot
@@ -575,6 +749,9 @@ public class BitstreamStorageManager
         try
         {
             context = new Context();
+
+            // TODO : FILTER DELETABLE BITSTREAMS ON PRESENCE IN VERSION OR BITSTREAM TABLES. (ALTERNATIVE, LET FKEY CONSTRAINT VOLATION ELIMINATE BITSREAMS NOT TO BE DELETED
+            // example   "select Bitsream.* from Bitstream left join Version2Bitstream on Bitstream.bitstream_id = Version2Bitstream.bitstream_id where deleted ='1'";
 
             String myQuery = "select * from Bitstream where deleted = '1'";
 
@@ -888,4 +1065,124 @@ public class BitstreamStorageManager
 		return buf.toString();
 	}
 
+    /**
+     *  Convenience method to get Bitstream URI off of Bitstream object
+     *
+     *  Create a URI representation of a Bitstream that can be used to accurately identify it in the
+     *  assetstore, includes support to encode the internal identifier after the #
+     *
+     *  Identifier Encoding:
+     *      /bitstrema/id/{bitstream-id}/{bitstream-name}#{store-id}:{internal-storage-id}
+     *
+     */
+    public static URI getAbsoluteURI(Context context,Bitstream bitstream)
+    {
+        // Check that bitstream is not null
+        if (bitstream == null)
+            return null;
+        try {
+            TableRow bRow = DatabaseManager.findByUnique(context,"Bitstream","bitstream_id",bitstream.getID());
+            return getAbsoluteURI(bRow);
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+
+    }
+
+    /**
+     *  Convenienece Method to get Bitstream URI off of Database row.
+     *
+     *  Create a URI representation of a Bitstream that can be used to accurately identify it in the
+     *  assetstore, includes support to encode the internal identifier after the #
+
+     *  Identifier Encoding:
+     *      /bitstrema/id/{bitstream-id}/{bitstream-name}#{store-id}:{internal-storage-id}
+     *
+     */
+    public static URI getAbsoluteURI(TableRow bitstream)
+    {
+        // Check that bitstream is not null
+        if (bitstream == null)
+            return null;
+
+        int storeNumber = bitstream.getIntColumn("store_number");
+        String iid = bitstream.getStringColumn("internal_id");
+        int bitstreamId = bitstream.getIntColumn("bitstream_id");
+        String bitstreamName =bitstream.getStringColumn("name");
+        return getAbsoluteURI(storeNumber,iid,bitstreamId,bitstreamName);
+    }
+
+    /**
+     *  Create a URI representation of a Bitstream that can be used to accurately identify it in the
+     *  assetstore, includes support to encode the internal identifier after the #
+     *
+     *  Identifier Encoding:
+     *      /bitstrema/id/{bitstream-id}/{bitstream-name}#{store-id}:{internal-storage-id}
+     *
+     */
+    public static URI getAbsoluteURI(int storeNumber,String iid,int bitstreamId,String bitstreamName)
+    {
+    // Get the store to use
+    // Default to zero ('assetstore.dir') for backwards compatibility
+
+    if (storeNumber == -1)
+        storeNumber = 0;
+    //GeneralFile assetstore = assetStores[storeNumber];
+
+
+    String subspace = "asset";
+
+    // there are 4 cases:
+    // -conventional bitstream, conventional storage
+    // -conventional bitstream, srb storage
+    // -registered bitstream, conventional storage
+    // -registered bitstream, srb storage
+    if (isRegisteredBitstream(iid))
+    {
+        iid = iid.substring(REGISTERED_FLAG.length());
+        subspace = "registered";
+    }
+    try
+    {
+        if(bitstreamName!=null){
+            bitstreamName = URLEncoder.encode(bitstreamName);
+        } else
+        {
+            bitstreamName = "Unknown";
+            log.error("bitstream file name unknow:bitstream id="+bitstreamId);
+        }
+        return URI.create("/bitstream/id/"+bitstreamId+"/"+bitstreamName+
+                "#"+
+                storeNumber+
+                ":"+
+                URLEncoder.encode(iid, "UTF-8"));
+    }
+    catch (UnsupportedEncodingException e)
+    {
+        log.error("Failed creating URI for bitstream: "+e.toString());
+    }
+    return null;
+}
+
+    /**
+     * Translate bitstream absolute URI into values in bitstream row.
+     * Retrieves TableSets store_number and internal_id columns in the row.
+     *
+     * Format:
+     *      /bitstream/{bitstream-id}/{bitstream-name}#{store-id}:{internal_id}
+     */
+    public static TableRow dereferenceAbsoluteURI(Context context, URI uri)
+            throws IllegalArgumentException, SQLException
+    {
+        String path = uri.getPath();
+        if (!path.startsWith("/bitstream/id/"))
+            throw new IllegalArgumentException("Path does not start with /bitstream/: "+uri.toString());
+        String rest = path.replaceFirst("/bitstream/id/", "");
+        String id = rest.substring(0,rest.indexOf("/"));
+
+        return DatabaseManager.find(context, "bitstream", Integer.valueOf(id));
+
+    }
 }

@@ -384,7 +384,7 @@ public class D1MemberNode {
                         .header("Content-Disposition", createDispositionHeader(bitstream, pid))
                         .build();
 
-                logEvent(request, pid, Event.READ);
+                logEvent(request, DataOneUtil.getPid(context,bitstream), Event.READ);
 
                 return response;
 
@@ -547,14 +547,14 @@ public class D1MemberNode {
                 if(obsoletedByBitstream!=null)
                 {
                     Identifier obsoletedByIdentifier = new Identifier();
-                    obsoletedByIdentifier.setValue(DataOneUtil.getPid(obsoletedByBitstream));
+                    obsoletedByIdentifier.setValue(DataOneUtil.getPid(context,obsoletedByBitstream));
                     systemMetadata.setObsoletedBy(obsoletedByIdentifier);
                 }
 
                 Bitstream obsoleteBitstream = BitstreamUtil.getObsoletes(context,bitstream);
                 if(obsoleteBitstream!=null){
                     Identifier obsoleteIdentifier = new Identifier();
-                    obsoleteIdentifier.setValue(DataOneUtil.getPid(obsoleteBitstream));
+                    obsoleteIdentifier.setValue(DataOneUtil.getPid(context, obsoleteBitstream));
                     systemMetadata.setObsoletes(obsoleteIdentifier);
                 }
                  /*
@@ -1096,7 +1096,7 @@ public class D1MemberNode {
                         .header("Content-Disposition", createDispositionHeader(bitstream, pid))
                         .build();
 
-                logEvent(request, pid, Event.REPLICATE);
+                logEvent(request, DataOneUtil.getPid(context,bitstream), Event.REPLICATE);
 
                 return response;
 

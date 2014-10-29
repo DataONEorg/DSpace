@@ -8,20 +8,14 @@
 package org.dspace.versioning;
 
 import org.apache.log4j.Logger;
-import org.dspace.app.packager.Packager;
-import org.dspace.authorize.AuthorizeException;
 import org.dspace.authorize.AuthorizeManager;
-import org.dspace.bitstore.BitstreamStorageOutputStream;
-import org.dspace.bitstore.ExtendedBitstreamStorageManager;
 import org.dspace.content.*;
-import org.dspace.content.crosswalk.CrosswalkException;
 import org.dspace.content.packager.PackageIngester;
 import org.dspace.content.packager.PackageParameters;
 import org.dspace.core.Constants;
 import org.dspace.core.Context;
 import org.dspace.core.PluginManager;
 import org.dspace.utils.DSpace;
-import org.jaxen.expr.iter.IterableNamespaceAxis;
 import org.springframework.beans.factory.annotation.Required;
 
 import java.io.*;

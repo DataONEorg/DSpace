@@ -5,7 +5,7 @@
  *
  * http://www.dspace.org/license/
  */
-package org.dspace.bitstore;
+package org.dspace.storage.bitstore;
 
 import org.apache.log4j.Logger;
 import org.dspace.core.Constants;
@@ -102,6 +102,11 @@ public class BitstreamStorageOutputStream extends DigestOutputStream {
     public int getBitstreamID()
     {
         return bitstream.getIntColumn("bitstream_id");
+    }
+
+    public String getBitstreamUuid()
+    {
+        return bitstream.getStringColumn("uuid");
     }
 
     public void setAttribute(String name, Object value)

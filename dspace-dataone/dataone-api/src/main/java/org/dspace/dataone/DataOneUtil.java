@@ -9,7 +9,13 @@ package org.dspace.dataone;
 
 import org.dspace.content.Bitstream;
 import org.dspace.content.BitstreamFormat;
+import org.dspace.content.BitstreamUtil;
 import org.dspace.content.OREManifestWriter;
+import org.dspace.core.ConfigurationManager;
+import org.dspace.core.Context;
+
+import java.sql.SQLException;
+import java.util.UUID;
 
 /**
  * Created by mdiggory on 10/13/14.
@@ -30,14 +36,8 @@ public class DataOneUtil {
         return formatId;
     }
 
-    public static String getPid(Bitstream bitstream)
-    {
-        return getPid(Integer.toString(bitstream.getID()));
-    }
-
-    public static String getPid(String id)
-    {
-        return "ds:bitstream/"+id;
+    public static String getPid(Context context, Bitstream bitstream) throws SQLException {
+        return "uuid:" + BitstreamUtil.getUuid(context, bitstream);
     }
 
 

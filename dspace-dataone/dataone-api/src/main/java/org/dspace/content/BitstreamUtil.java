@@ -8,7 +8,7 @@
 package org.dspace.content;
 
 import org.apache.log4j.Logger;
-import org.dspace.bitstore.ExtendedBitstreamStorageManager;
+import org.dspace.storage.bitstore.BitstreamStorageManager;
 import org.dspace.core.Context;
 import org.dspace.core.LogManager;
 import org.dspace.storage.rdbms.DatabaseManager;
@@ -16,7 +16,6 @@ import org.dspace.storage   .rdbms.TableRow;
 import org.dspace.storage.rdbms.TableRowIterator;
 import org.dspace.utils.DSpace;
 import org.dspace.versioning.Version;
-import org.dspace.versioning.VersionDAO;
 import org.dspace.versioning.VersionHistory;
 import org.dspace.versioning.VersioningService;
 
@@ -42,7 +41,7 @@ public class BitstreamUtil {
     public static void delete(Context context, Bitstream bitstream, boolean cleanup) throws SQLException, IOException {
         bitstream.delete();
         if(cleanup)
-            ExtendedBitstreamStorageManager.cleanup(context, bitstream.getID(), true, true);
+            BitstreamStorageManager.cleanup(context, bitstream.getID(), true, true);
     }
 
     /**
@@ -62,6 +61,73 @@ public class BitstreamUtil {
      */
     public static boolean isDeleted(Bitstream bitstream) throws SQLException {
         return bitstream.isDeleted();
+    }
+
+    /**
+     * Add support to retrieve the last modified date. Ideally, this should be moved inside Bitstream class in
+     * future DSpace version.
+     *
+     * @param context
+     * @param uuid
+     * @return
+     * @throws SQLException
+     */
+    public static Bitstream findByUuid(Context context, String uuid) throws SQLException{
+
+        if(uuid.contains(":"))
+            uuid = uuid.substring(uuid.lastIndexOf(":")+1);
+
+        TableRow row = DatabaseManager.findByUnique(context, "bitstream", "uuid", uuid);
+
+        if (row == null)
+        {
+            if (log.isDebugEnabled())
+            {
+                log.debug(LogManager.getHeader(context, "find_bitstream",
+                        "not_found,bitstream_id=" + uuid));
+            }
+
+            return null;
+        }
+
+        // not null, return Bitstream
+        if (log.isDebugEnabled())
+        {
+            log.debug(LogManager.getHeader(context, "find_bitstream",
+                    "uuid=" + uuid));
+        }
+
+        // First check the cache
+        Bitstream fromCache = (Bitstream) context
+                .fromCache(Bitstream.class, row.getIntColumn("bitstream_id"));
+
+        if (fromCache != null)
+        {
+            return fromCache;
+        }
+        else
+        {
+            return new Bitstream(context, row);
+        }
+
+    }
+
+    /**
+     *
+     * @param context
+     * @param bitstream
+     * @return
+     * @throws SQLException
+     */
+    public static String getUuid(Context context, Bitstream bitstream) throws SQLException{
+
+        TableRowIterator row = DatabaseManager.query(context,"select * from bitstream where bitstream_id = "+bitstream.getID());
+
+        if (row.hasNext())
+        {
+            return row.next().getStringColumn("uuid");
+        }
+        return null;
     }
 
     /**

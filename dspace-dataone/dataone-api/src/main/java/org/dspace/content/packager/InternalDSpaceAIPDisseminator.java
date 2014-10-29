@@ -19,7 +19,7 @@ import edu.harvard.hul.ois.mets.helper.*;
 import org.apache.log4j.Logger;
 import org.dspace.app.util.Util;
 import org.dspace.authorize.AuthorizeException;
-import org.dspace.bitstore.ExtendedBitstreamStorageManager;
+import org.dspace.storage.bitstore.BitstreamStorageManager;
 import org.dspace.content.*;
 import org.dspace.content.crosswalk.*;
 import org.dspace.core.*;
@@ -135,7 +135,7 @@ public class InternalDSpaceAIPDisseminator extends AbstractMETSDisseminator
             {
                 return null;
             }
-            return ExtendedBitstreamStorageManager.getAbsoluteURI(context, bitstream).toString();
+            return BitstreamStorageManager.getAbsoluteURI(context, bitstream).toString();
         }
         else
         {

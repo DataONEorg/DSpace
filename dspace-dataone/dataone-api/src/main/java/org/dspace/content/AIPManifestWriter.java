@@ -9,13 +9,12 @@ package org.dspace.content;
 
 import org.apache.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
-import org.dspace.bitstore.BitstreamStorageOutputStream;
-import org.dspace.bitstore.ExtendedBitstreamStorageManager;
+import org.dspace.storage.bitstore.BitstreamStorageOutputStream;
+import org.dspace.storage.bitstore.BitstreamStorageManager;
 import org.dspace.content.crosswalk.CrosswalkException;
 import org.dspace.content.packager.*;
 import org.dspace.core.Context;
 import org.dspace.core.PluginManager;
-import org.dspace.storage.bitstore.BitstreamStorageManager;
 import org.dspace.storage.rdbms.DatabaseManager;
 import org.dspace.storage.rdbms.TableRow;
 
@@ -63,7 +62,7 @@ public class AIPManifestWriter
         pkgParams.addProperty("includeBundles", "+all");
         pkgParams.put("context",context);
 
-        BitstreamStorageOutputStream bos = ExtendedBitstreamStorageManager.store(context,
+        BitstreamStorageOutputStream bos = BitstreamStorageManager.store(context,
                 BitstreamFormat.findByShortDescription(context, "http://www.loc.gov/METS/"));
 
         bos.setAttribute("name","mets.xml");
@@ -97,7 +96,7 @@ public class AIPManifestWriter
     public static Bitstream dereferenceAbsoluteURI(Context context, URI uri)
             throws SQLException
     {
-        TableRow row = ExtendedBitstreamStorageManager.dereferenceAbsoluteURI(context, uri);
+        TableRow row = BitstreamStorageManager.dereferenceAbsoluteURI(context, uri);
         if (row == null)
             return null;
         else
@@ -117,7 +116,7 @@ public class AIPManifestWriter
     {
         try{
             TableRow bRow = DatabaseManager.findByUnique(context,"Bitstream","bitstream_id",bitstream.getID());
-            URI result = ExtendedBitstreamStorageManager.getAbsoluteURI(bRow);
+            URI result = BitstreamStorageManager.getAbsoluteURI(bRow);
             if (log.isDebugEnabled())
                 log.debug("Bitstream.getAbsoluteURI returning = \""+result+"\"");
             return result;
