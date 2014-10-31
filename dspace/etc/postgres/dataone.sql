@@ -24,7 +24,8 @@ ALTER TABLE versionitem DROP CONSTRAINT versionitem_item_id_fkey;
 —-----------------
 -- Bitstream Improvements (Created, last modified Triggers, char based uuid column)
 —-----------------
-alter table bitstream add column uuid VARCHAR(36);
+create EXTENSION "uuid-ossp";
+alter table bitstream add column uuid VARCHAR(36) default uuid_generate_v4();
 alter table bitstream add column create_date timestamp default current_timestamp;
 alter table bitstream add column last_modified_date timestamp default current_timestamp;
 
