@@ -170,13 +170,11 @@ The consumer should be enabled by adding versioning to the list of consumers in 
 eg: event.dispatcher.default.consumers = versioning, search, browse, eperson, harvester
 ```
 
-## Adustments to DSpace Discovery Solr Schema ##
+## Adjustments for DSpace Solr DataONE logging core ##
 
-"WiP"
+Add the following files [dspace/solr/dataone/pom.xml](../dspace/solr/dataone)  for the "dataone" log core. This core provides persistence of all dataone access and updates.
 
-## Adjustments for Solr DataONE log core ##
-
-"WiP"
+Add the dataone core to the [dspace/solr/solr.xml](../dspace/solr/solr.xml)
 
 ## Commandline Support for reindexing DataONE Logs ##
 
