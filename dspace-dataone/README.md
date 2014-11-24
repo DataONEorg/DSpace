@@ -172,7 +172,7 @@ eg: event.dispatcher.default.consumers = versioning, search, browse, eperson, ha
 
 ## Adjustments for DSpace Solr DataONE logging core ##
 
-Add the following files [dspace/solr/dataone/pom.xml](../dspace/solr/dataone)  for the "dataone" log core. This core provides persistence of all dataone access and updates.
+Add the following files [dspace/solr/dataone](../dspace/solr/dataone)  for the "dataone" log core. This core provides persistence of all dataone access and updates.
 
 Add the dataone core to the [dspace/solr/solr.xml](../dspace/solr/solr.xml)
 
